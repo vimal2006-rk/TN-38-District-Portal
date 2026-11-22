@@ -1,0 +1,117 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About Us",
+    "stateAdmin": "State Administration",
+    "districts": "District Directory",
+    "officeBearers": "Office Bearers",
+    "membership": "Membership",
+    "whatsapp": "WhatsApp Groups",
+    "news": "News & Updates",
+    "events": "Events",
+    "gallery": "Gallery",
+    "administration": "Administration",
+    "contact": "Contact",
+    "adminPanel": "Admin Panel"
+  },
+  "home": {
+    "heroTitle": "Tamil Nadu 38 District Organization Portal",
+    "heroSubtitle": "Connecting all 38 districts of Tamil Nadu under one platform",
+    "joinNow": "Join Now",
+    "viewDistricts": "View Districts"
+  },
+  "districts": {
+    "title": "District Directory",
+    "allDistricts": "All 38 Districts",
+    "searchPlaceholder": "Search district...",
+    "viewDetails": "View Details",
+    "members": "Members",
+    "events": "Events"
+  },
+  "membership": {
+    "title": "Membership Registration",
+    "fullName": "Full Name",
+    "mobile": "Mobile Number",
+    "email": "Email Address",
+    "district": "Select District",
+    "address": "Address",
+    "category": "Membership Category",
+    "submit": "Submit Application",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "inactive": "Inactive",
+    "successMsg": "Application submitted successfully!"
+  },
+  "whatsapp": {
+    "title": "WhatsApp Groups",
+    "joinGroup": "Join Group",
+    "selectDistrict": "Select your district to join the WhatsApp group"
+  },
+  "news": {
+    "title": "News & Updates",
+    "readMore": "Read More",
+    "publishedOn": "Published on"
+  },
+  "events": {
+    "title": "Events",
+    "upcomingEvents": "Upcoming Events",
+    "location": "Location",
+    "date": "Date"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "photo": "Photo",
+    "video": "Video"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email"
+  },
+  "about": {
+    "title": "About Us",
+    "mission": "Our Mission",
+    "vision": "Our Vision"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "manageDistricts": "Manage Districts",
+    "manageMembers": "Manage Members",
+    "manageNews": "Manage News",
+    "manageEvents": "Manage Events",
+    "manageGallery": "Manage Gallery",
+    "manageWhatsApp": "Manage WhatsApp",
+    "manageAdmins": "Manage Admins",
+    "translations": "Manage Translations",
+    "logout": "Logout",
+    "approve": "Approve",
+    "reject": "Reject",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add New",
+    "save": "Save",
+    "cancel": "Cancel",
+    "status": "Status",
+    "actions": "Actions",
+    "total": "Total",
+    "pending": "Pending",
+    "approved": "Approved"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "noData": "No data available",
+    "search": "Search",
+    "filter": "Filter",
+    "page": "Page",
+    "of": "of",
+    "next": "Next",
+    "prev": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "close": "Close"
+  }
+}

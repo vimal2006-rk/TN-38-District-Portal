@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-tamil,
+[lang="ta"] {
+  font-family: 'Noto Sans Tamil', sans-serif;
+}
+
+/* Ensure images never overflow their container */
+img, svg, video, canvas, audio, iframe, embed, object {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Touch friendly minimum tap targets for buttons and interactive elements */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Fluid responsive container utilities */
+@layer utilities {
+  .safe-padding-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+}
