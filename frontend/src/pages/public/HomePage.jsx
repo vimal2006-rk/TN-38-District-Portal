@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,16 +14,77 @@ import {
   TrendingUp,
   BadgeCheck,
   CheckCircle2,
-  Store
+  Store,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 
+const HERO_SLIDES = [
+  {
+    id: 1,
+    image: '/hero/hero-1.png',
+    badgeEn: 'State Leadership / மாநில தலைமை',
+    badgeTa: 'மாநில தலைமை நிர்வாகம்',
+    titleEn: 'Tamil Nadu Mobile Sales & Service Association',
+    titleTa: 'தமிழ்நாடு மொபைல் விற்பனை & சேவை சங்கம்',
+    subtitleEn: 'Regd. No: 23/2025 • Serving 38 Districts Across Tamil Nadu',
+    subtitleTa: 'பதிவு எண்: 23/2025 • 38 மாவட்ட மொபைல் வணிகர் கூட்டமைப்பு'
+  },
+  {
+    id: 2,
+    image: '/hero/hero-2.jpg',
+    badgeEn: 'District Representation / மாவட்ட கட்டமைப்பு',
+    badgeTa: 'தமிழ்நாடு வணிகர் சங்கங்களின் பேரவை',
+    titleEn: 'United Strength of Mobile Traders & Technicians',
+    titleTa: 'ஒன்றிணைந்த மொபைல் வர்த்தகர்கள் & டெக்னீஷியன்கள்',
+    subtitleEn: 'Empowering Retailers, Wholesalers & Service Centers',
+    subtitleTa: 'சில்லறை விற்பனையாளர்கள், சர்வீஸ் மையங்களின் அதிகாரப்பூர்வ கூட்டமைப்பு'
+  },
+  {
+    id: 3,
+    image: '/hero/hero-3.png',
+    badgeEn: 'Apex State Guidance / தலைமை வழிகாட்டல்',
+    badgeTa: 'மாநில தலைமை ஒருங்கிணைப்பு',
+    titleEn: 'TN 38 District Centralized Digital Network',
+    titleTa: '38 மாவட்டங்களுக்கான டிஜிட்டல் ஒருங்கிணைப்பு',
+    subtitleEn: 'Connecting Over 10,000+ Mobile Business Owners',
+    subtitleTa: '10,000-க்கும் மேற்பட்ட மொபைல் கடை உரிமையாளர்களின் பலம்'
+  },
+  {
+    id: 4,
+    image: '/hero/hero-4.jpg',
+    badgeEn: 'Trade & Welfare / வர்த்தக பாதுகாப்பு & நலம்',
+    badgeTa: 'வணிகர் பாதுகாப்பு & சட்ட உதவி',
+    titleEn: 'Verified Merchant Security & Dispute Support',
+    titleTa: 'உறுப்பினர் பாதுகாப்பு & வணிக வளர்ச்சி திட்டங்கள்',
+    subtitleEn: 'Statewide Genuine Spare Parts & Display Supply Network',
+    subtitleTa: 'அசல் உதிரிபாகங்கள் விநியோகம் & தொழில் வளர்ச்சி'
+  },
+  {
+    id: 5,
+    image: '/hero/hero-5.jpg',
+    badgeEn: 'B2B Trade Network / B2B வர்த்தக கட்டமைப்பு',
+    badgeTa: '38 மாவட்ட B2B வாட்ஸ்அப் நெட்வொர்க்',
+    titleEn: 'Direct Brand Pricing & District WhatsApp Groups',
+    titleTa: 'நேரடி மொத்த விலை சலுகைகள் & வாட்ஸ்அப் குழுக்கள்',
+    subtitleEn: 'Daily Stock Updates, Flash Deals & Fast Logistics',
+    subtitleTa: 'தினசரி ஸ்டாக் பரிமாற்றம் & அதிவேக பார்சல் வசதி'
+  }
+];
+
 export default function HomePage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
   const [districts, setDistricts] = useState(TN_DISTRICTS);
+
+  // Hero carousel state
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     api.get('/districts')
@@ -36,6 +97,26 @@ export default function HomePage() {
         setDistricts(TN_DISTRICTS);
       });
   }, []);
+
+  // 5-second automatic slider transition
+  useEffect(() => {
+    if (!isPaused) {
+      timerRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      }, 5000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isPaused]);
+
+  const handlePrev = () => {
+    setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  };
 
   const mobileBusinessPoints = [
     {
@@ -88,63 +169,227 @@ export default function HomePage() {
     }
   ];
 
+  const activeSlideData = HERO_SLIDES[currentSlide];
+
   return (
-    <div className="space-y-16 pb-16" style={{ backgroundColor: '#F4F7FC' }}>
+    <div className="space-y-12 sm:space-y-16 pb-16" style={{ backgroundColor: '#F4F7FC' }}>
 
-      {/* ── Hero Banner ──────────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          FULL-WIDTH HERO SECTION WITH 5-IMAGE CAROUSEL & LOGO COLORWAYS
+          Matching: Dark Navy Blue (#09246B), Royal Blue (#123DAA), Green (#16A34A), White
+      ══════════════════════════════════════════════════════════════════ */}
       <section
-        className="relative text-white py-20 px-4 sm:px-6 lg:px-8 shadow-inner overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #09246B 0%, #123DAA 50%, #2463D4 100%)' }}
+        className="relative text-white overflow-hidden shadow-xl"
+        style={{
+          background: 'linear-gradient(135deg, #06194b 0%, #09246B 38%, #123DAA 72%, #08432a 100%)'
+        }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Dot pattern overlay */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        {/* Subtle grid pattern & glowing green/blue accents */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#123DAA]/30 blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-[#16A34A]/25 blur-3xl pointer-events-none"></div>
 
-        {/* Logo watermark */}
-        <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10 hidden lg:block">
-          <img src="/logo.jpg" alt="" className="w-56 h-56 rounded-full object-cover" />
-        </div>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
 
-        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-6">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
-            <Smartphone size={14} /> தமிழ்நாடு அனைத்து 38 மாவட்ட மொபைல் வர்த்தக கட்டமைப்பு
-          </span>
+            {/* Left Column: Association Branding & Headings (7 Cols on Desktop) */}
+            <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
+              
+              {/* Association Badge with Logo */}
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
+                <img
+                  src="/logo.jpg"
+                  alt="TMSSA Logo"
+                  className="h-6 w-6 rounded-full object-cover border border-[#F07818]"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <span className="text-xs sm:text-[13px] font-bold tracking-wide">
+                  தமிழ்நாடு மொபைல் விற்பனை மற்றும் சேவை சங்கம்
+                </span>
+                <span
+                  className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded font-mono font-bold"
+                  style={{ backgroundColor: '#16A34A' }}
+                >
+                  Reg: 23/2025
+                </span>
+              </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            {t('home.heroTitle', 'Tamil Nadu 38 District Organization Portal')}
-          </h1>
+              {/* Main Headline */}
+              <div className="space-y-2">
+                <h1 className="text-2xl xs:text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
+                  <span className="text-white block">
+                    TN 38 மாவட்ட போர்டல்
+                  </span>
+                  <span
+                    className="block text-xl xs:text-2xl sm:text-3xl xl:text-4xl font-extrabold mt-1"
+                    style={{ color: '#F07818' }}
+                  >
+                    Tamil Nadu 38 District Portal
+                  </span>
+                </h1>
+                <p className="text-sm sm:text-base xl:text-lg text-blue-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                  {isTa
+                    ? 'தமிழ்நாட்டின் அனைத்து 38 மாவட்டங்களின் மொபைல் ஷோரூம்கள், மொத்த விற்பனையாளர்கள், உதிரிபாகங்கள் விநியோகம் மற்றும் சர்வீஸ் சென்டர்களை இணைக்கும் அதிகாரப்பூர்வ தலைமை தளம்.'
+                    : 'The official centralized apex digital platform connecting mobile phone sales, service technicians, wholesale dealers, and 38 district trade committees across Tamil Nadu.'}
+                </p>
+              </div>
 
-          <p className="text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto font-light">
-            {t('home.heroSubtitle', 'Connecting all 38 districts of Tamil Nadu under one centralized digital platform.')}
-          </p>
+              {/* Association Quick Badges */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
+                {[
+                  { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#60a5fa' },
+                  { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#4ade80' },
+                  { value: '38 B2B', label: isTa ? 'வாட்ஸ்அப்' : 'WhatsApp', color: '#fb923c' },
+                  { value: '100%', label: isTa ? 'சரிபார்க்கப்பட்டது' : 'Verified', color: '#ffffff' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 sm:p-3 border border-white/15 text-center shadow-xs"
+                  >
+                    <div className="text-base sm:text-xl font-black" style={{ color: item.color }}>
+                      {item.value}
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-blue-200 font-medium">
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <Link
-              to="/membership"
-              className="px-6 py-3 rounded-xl font-bold transition shadow-lg flex items-center gap-2 text-sm sm:text-base"
-              style={{ backgroundColor: '#F07818', color: '#fff' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#d4660f'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F07818'}
-            >
-              <span>{t('home.joinNow', 'Join Now / உறுப்பினர் பதிவு')}</span>
-              <ArrowRight size={18} />
-            </Link>
-            <Link
-              to="/districts"
-              className="px-6 py-3 rounded-xl font-semibold text-white border border-white/30 transition flex items-center gap-2 text-sm sm:text-base hover:bg-white/15"
-            >
-              <MapPin size={18} />
-              <span>{t('home.viewDistricts', 'All 38 Districts')}</span>
-            </Link>
-            <Link
-              to="/whatsapp-groups"
-              className="px-6 py-3 rounded-xl font-semibold text-white transition flex items-center gap-2 shadow-md text-sm sm:text-base"
-              style={{ backgroundColor: '#16A34A' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#14532d'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#16A34A'}
-            >
-              <MessageCircle size={18} />
-              <span>WhatsApp Groups</span>
-            </Link>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+                <Link
+                  to="/membership"
+                  className="px-5 sm:px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 text-xs sm:text-sm text-white"
+                  style={{ backgroundColor: '#F07818' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4660f')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F07818')}
+                >
+                  <span>{t('home.joinNow', 'Join Now / உறுப்பினர் பதிவு')}</span>
+                  <ArrowRight size={16} />
+                </Link>
+
+                <Link
+                  to="/districts"
+                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm hover:bg-white/15 backdrop-blur-xs"
+                >
+                  <MapPin size={16} />
+                  <span>{t('home.viewDistricts', 'All 38 Districts')}</span>
+                </Link>
+
+                <Link
+                  to="/whatsapp-groups"
+                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white transition-all flex items-center gap-2 shadow-md text-xs sm:text-sm"
+                  style={{ backgroundColor: '#16A34A' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
+                >
+                  <MessageCircle size={16} />
+                  <span>WhatsApp Groups</span>
+                </Link>
+              </div>
+
+            </div>
+
+            {/* Right Column: 5-Image Carousel Stage (5 Cols on Desktop) */}
+            <div className="lg:col-span-5 relative flex flex-col items-center">
+              
+              {/* Carousel Display Frame */}
+              <div className="w-full max-w-[420px] sm:max-w-[460px] relative rounded-3xl p-3 sm:p-4 bg-gradient-to-b from-white/15 to-white/5 border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden group">
+                
+                {/* Glow ring in green and blue */}
+                <div
+                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-2xl pointer-events-none opacity-60"
+                  style={{ backgroundColor: '#16A34A' }}
+                />
+                <div
+                  className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full blur-2xl pointer-events-none opacity-60"
+                  style={{ backgroundColor: '#123DAA' }}
+                />
+
+                {/* Leader / Slide Header Badge */}
+                <div className="flex items-center justify-between mb-2.5 px-2 relative z-10">
+                  <span
+                    className="text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-xs"
+                    style={{ backgroundColor: '#16A34A' }}
+                  >
+                    {isTa ? activeSlideData.badgeTa : activeSlideData.badgeEn}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-blue-200 bg-white/10 px-2 py-0.5 rounded">
+                    0{activeSlideData.id} / 0{HERO_SLIDES.length}
+                  </span>
+                </div>
+
+                {/* The Active Slide Image Container (Preserving original aspect ratio & quality without cropping) */}
+                <div className="relative h-[360px] xs:h-[400px] sm:h-[440px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#09246B]/50 to-[#07173b]/80 flex items-center justify-center p-2">
+                  {HERO_SLIDES.map((slide, idx) => (
+                    <div
+                      key={slide.id}
+                      className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-in-out ${
+                        idx === currentSlide
+                          ? 'opacity-100 z-10 pointer-events-auto'
+                          : 'opacity-0 z-0 pointer-events-none'
+                      }`}
+                    >
+                      <img
+                        src={slide.image}
+                        alt={isTa ? slide.titleTa : slide.titleEn}
+                        className="h-full w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] select-none"
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Slide Caption Box */}
+                <div className="mt-3 px-2 text-center relative z-10">
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                    {isTa ? activeSlideData.titleTa : activeSlideData.titleEn}
+                  </h3>
+                  <p className="text-xs text-blue-200 mt-0.5 truncate">
+                    {isTa ? activeSlideData.subtitleTa : activeSlideData.subtitleEn}
+                  </p>
+                </div>
+
+                {/* Previous & Next Navigation Buttons */}
+                <button
+                  onClick={handlePrev}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                <button
+                  onClick={handleNext}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight size={20} />
+                </button>
+
+              </div>
+
+              {/* Dot Indicators */}
+              <div className="flex items-center gap-2 mt-4 z-10">
+                {HERO_SLIDES.map((slide, idx) => (
+                  <button
+                    key={slide.id}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`h-2.5 rounded-full transition-all duration-300 focus:outline-none ${
+                      idx === currentSlide
+                        ? 'w-8 bg-[#F07818] shadow-md'
+                        : 'w-2.5 bg-white/40 hover:bg-white/80'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+            </div>
+
           </div>
         </div>
       </section>
