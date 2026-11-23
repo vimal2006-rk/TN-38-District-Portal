@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,64 +16,18 @@ import {
   CheckCircle2,
   Store,
   ChevronLeft,
-  ChevronRight,
-  Sparkles
+  ChevronRight
 } from 'lucide-react';
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 
 const HERO_SLIDES = [
-  {
-    id: 1,
-    image: '/hero/hero-1.png',
-    badgeEn: 'State Leadership / மாநில தலைமை',
-    badgeTa: 'மாநில தலைமை நிர்வாகம்',
-    titleEn: 'Tamil Nadu Mobile Sales & Service Association',
-    titleTa: 'தமிழ்நாடு மொபைல் விற்பனை & சேவை சங்கம்',
-    subtitleEn: 'Regd. No: 23/2025 • Serving 38 Districts Across Tamil Nadu',
-    subtitleTa: 'பதிவு எண்: 23/2025 • 38 மாவட்ட மொபைல் வணிகர் கூட்டமைப்பு'
-  },
-  {
-    id: 2,
-    image: '/hero/hero-2.jpg',
-    badgeEn: 'District Representation / மாவட்ட கட்டமைப்பு',
-    badgeTa: 'தமிழ்நாடு வணிகர் சங்கங்களின் பேரவை',
-    titleEn: 'United Strength of Mobile Traders & Technicians',
-    titleTa: 'ஒன்றிணைந்த மொபைல் வர்த்தகர்கள் & டெக்னீஷியன்கள்',
-    subtitleEn: 'Empowering Retailers, Wholesalers & Service Centers',
-    subtitleTa: 'சில்லறை விற்பனையாளர்கள், சர்வீஸ் மையங்களின் அதிகாரப்பூர்வ கூட்டமைப்பு'
-  },
-  {
-    id: 3,
-    image: '/hero/hero-3.png',
-    badgeEn: 'Apex State Guidance / தலைமை வழிகாட்டல்',
-    badgeTa: 'மாநில தலைமை ஒருங்கிணைப்பு',
-    titleEn: 'TN 38 District Centralized Digital Network',
-    titleTa: '38 மாவட்டங்களுக்கான டிஜிட்டல் ஒருங்கிணைப்பு',
-    subtitleEn: 'Connecting Over 10,000+ Mobile Business Owners',
-    subtitleTa: '10,000-க்கும் மேற்பட்ட மொபைல் கடை உரிமையாளர்களின் பலம்'
-  },
-  {
-    id: 4,
-    image: '/hero/hero-4.jpg',
-    badgeEn: 'Trade & Welfare / வர்த்தக பாதுகாப்பு & நலம்',
-    badgeTa: 'வணிகர் பாதுகாப்பு & சட்ட உதவி',
-    titleEn: 'Verified Merchant Security & Dispute Support',
-    titleTa: 'உறுப்பினர் பாதுகாப்பு & வணிக வளர்ச்சி திட்டங்கள்',
-    subtitleEn: 'Statewide Genuine Spare Parts & Display Supply Network',
-    subtitleTa: 'அசல் உதிரிபாகங்கள் விநியோகம் & தொழில் வளர்ச்சி'
-  },
-  {
-    id: 5,
-    image: '/hero/hero-5.jpg',
-    badgeEn: 'B2B Trade Network / B2B வர்த்தக கட்டமைப்பு',
-    badgeTa: '38 மாவட்ட B2B வாட்ஸ்அப் நெட்வொர்க்',
-    titleEn: 'Direct Brand Pricing & District WhatsApp Groups',
-    titleTa: 'நேரடி மொத்த விலை சலுகைகள் & வாட்ஸ்அப் குழுக்கள்',
-    subtitleEn: 'Daily Stock Updates, Flash Deals & Fast Logistics',
-    subtitleTa: 'தினசரி ஸ்டாக் பரிமாற்றம் & அதிவேக பார்சல் வசதி'
-  }
+  { id: 1, image: '/hero/hero-1.png', alt: 'TMSSA Leader 1' },
+  { id: 2, image: '/hero/hero-2.jpg', alt: 'TMSSA Leader 2' },
+  { id: 3, image: '/hero/hero-3.png', alt: 'TMSSA Leader 3' },
+  { id: 4, image: '/hero/hero-4.jpg', alt: 'TMSSA Leader 4' },
+  { id: 5, image: '/hero/hero-5.jpg', alt: 'TMSSA Leader 5' }
 ];
 
 export default function HomePage() {
@@ -83,8 +37,6 @@ export default function HomePage() {
 
   // Hero carousel state
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const timerRef = useRef(null);
 
   useEffect(() => {
     api.get('/districts')
@@ -98,17 +50,13 @@ export default function HomePage() {
       });
   }, []);
 
-  // 5-second automatic slider transition
+  // Continuous auto-rotation every 5 seconds without stopping on hover
   useEffect(() => {
-    if (!isPaused) {
-      timerRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-      }, 5000);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPaused]);
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handlePrev = () => {
     setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
@@ -169,22 +117,18 @@ export default function HomePage() {
     }
   ];
 
-  const activeSlideData = HERO_SLIDES[currentSlide];
-
   return (
     <div className="space-y-12 sm:space-y-16 pb-16" style={{ backgroundColor: '#F4F7FC' }}>
 
       {/* ══════════════════════════════════════════════════════════════════
-          FULL-WIDTH HERO SECTION WITH 5-IMAGE CAROUSEL & LOGO COLORWAYS
-          Matching: Dark Navy Blue (#09246B), Royal Blue (#123DAA), Green (#16A34A), White
+          HERO SECTION WITH 5-IMAGE AUTO-ROTATING CAROUSEL (5 SECONDS)
+          Official Palette: Dark Navy Blue (#09246B), Royal Blue (#123DAA), Green (#16A34A)
       ══════════════════════════════════════════════════════════════════ */}
       <section
         className="relative text-white overflow-hidden shadow-xl"
         style={{
           background: 'linear-gradient(135deg, #06194b 0%, #09246B 38%, #123DAA 72%, #08432a 100%)'
         }}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
       >
         {/* Subtle grid pattern & glowing green/blue accents */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
@@ -293,7 +237,7 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right Column: 5-Image Carousel Stage (5 Cols on Desktop) */}
+            {/* Right Column: 5-Image Carousel Stage (Clean, Auto-Rotating Every 5s, Badge Removed) */}
             <div className="lg:col-span-5 relative flex flex-col items-center">
               
               {/* Carousel Display Frame */}
@@ -309,21 +253,8 @@ export default function HomePage() {
                   style={{ backgroundColor: '#123DAA' }}
                 />
 
-                {/* Leader / Slide Header Badge */}
-                <div className="flex items-center justify-between mb-2.5 px-2 relative z-10">
-                  <span
-                    className="text-[11px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-xs"
-                    style={{ backgroundColor: '#16A34A' }}
-                  >
-                    {isTa ? activeSlideData.badgeTa : activeSlideData.badgeEn}
-                  </span>
-                  <span className="text-xs font-mono font-bold text-blue-200 bg-white/10 px-2 py-0.5 rounded">
-                    0{activeSlideData.id} / 0{HERO_SLIDES.length}
-                  </span>
-                </div>
-
-                {/* The Active Slide Image Container (Preserving original aspect ratio & quality without cropping) */}
-                <div className="relative h-[360px] xs:h-[400px] sm:h-[440px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#09246B]/50 to-[#07173b]/80 flex items-center justify-center p-2">
+                {/* Active Slide Image Container (Preserving original aspect ratio & quality without cropping) */}
+                <div className="relative h-[380px] xs:h-[420px] sm:h-[460px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#09246B]/40 to-[#07173b]/70 flex items-center justify-center p-2">
                   {HERO_SLIDES.map((slide, idx) => (
                     <div
                       key={slide.id}
@@ -335,7 +266,7 @@ export default function HomePage() {
                     >
                       <img
                         src={slide.image}
-                        alt={isTa ? slide.titleTa : slide.titleEn}
+                        alt={slide.alt}
                         className="h-full w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] select-none"
                         loading={idx === 0 ? 'eager' : 'lazy'}
                       />
@@ -343,29 +274,19 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                {/* Slide Caption Box */}
-                <div className="mt-3 px-2 text-center relative z-10">
-                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
-                    {isTa ? activeSlideData.titleTa : activeSlideData.titleEn}
-                  </h3>
-                  <p className="text-xs text-blue-200 mt-0.5 truncate">
-                    {isTa ? activeSlideData.subtitleTa : activeSlideData.subtitleEn}
-                  </p>
-                </div>
-
                 {/* Previous & Next Navigation Buttons */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
-                  aria-label="Previous slide"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label="Previous image"
                 >
                   <ChevronLeft size={20} />
                 </button>
 
                 <button
                   onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
-                  aria-label="Next slide"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label="Next image"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -383,7 +304,7 @@ export default function HomePage() {
                         ? 'w-8 bg-[#F07818] shadow-md'
                         : 'w-2.5 bg-white/40 hover:bg-white/80'
                     }`}
-                    aria-label={`Go to slide ${idx + 1}`}
+                    aria-label={`Go to image ${idx + 1}`}
                   />
                 ))}
               </div>
