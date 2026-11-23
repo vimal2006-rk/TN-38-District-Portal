@@ -38,7 +38,6 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Close sidebar on route change on mobile
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
@@ -49,28 +48,42 @@ export default function AdminLayout() {
   };
 
   const navContent = (
-    <div className="flex flex-col h-full bg-gray-900 text-white">
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-orange-400 font-bold text-base hover:text-orange-300">
-          <Home size={18} />
-          <span>TN 38 Portal</span>
+    <div style={{ backgroundColor: '#09246B' }} className="flex flex-col h-full text-white">
+      {/* Brand */}
+      <div className="p-4 border-b border-blue-900/60 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5 font-bold text-base hover:opacity-90 transition">
+          <img
+            src="/logo.jpg"
+            alt="TMSSA Logo"
+            className="h-8 w-8 rounded-full object-cover border border-[#F07818]"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <div className="flex flex-col leading-tight">
+            <span className="text-white text-sm font-bold">TN 38 Portal</span>
+            <span style={{ color: '#F07818' }} className="text-[10px]">Admin Console</span>
+          </div>
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="laptop:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800"
+          className="laptop:hidden p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-white/10"
           aria-label="Close sidebar"
         >
           <X size={20} />
         </button>
       </div>
 
-      <div className="px-4 py-2 bg-gray-800/50 text-xs text-gray-400 flex items-center justify-between">
-        <span>Admin Console</span>
-        <span className="bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">
+      {/* Role Badge */}
+      <div className="px-4 py-2.5 bg-[#071d57] text-xs flex items-center justify-between border-b border-blue-900/40">
+        <span className="text-blue-300 text-[11px]">Access Level</span>
+        <span
+          className="text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold shadow-xs"
+          style={{ backgroundColor: '#F07818' }}
+        >
           {user?.role || 'ADMIN'}
         </span>
       </div>
 
+      {/* Nav items */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {ADMIN_LINKS.map((item) => {
           const Icon = item.icon;
@@ -79,11 +92,14 @@ export default function AdminLayout() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-colors min-h-[44px] ${
+                `flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all min-h-[44px] ${
                   isActive
-                    ? 'bg-orange-600 text-white font-semibold shadow-md'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'text-white font-semibold shadow-sm'
+                    : 'text-blue-200 hover:bg-white/10 hover:text-white'
                 }`
+              }
+              style={({ isActive }) =>
+                isActive ? { backgroundColor: '#123DAA' } : {}
               }
             >
               <Icon size={18} />
@@ -93,15 +109,16 @@ export default function AdminLayout() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-800 flex items-center justify-between">
-        <div className="text-xs text-gray-400 truncate pr-2">
-          <p className="font-semibold text-gray-200 truncate">{user?.name || 'Administrator'}</p>
-          <p className="truncate text-[11px]">{user?.email || 'admin@tn38portal.com'}</p>
+      {/* User profile & Logout */}
+      <div className="p-4 border-t border-blue-900/60 flex items-center justify-between bg-[#071d57]">
+        <div className="text-xs text-blue-300 truncate pr-2">
+          <p className="font-semibold text-white truncate">{user?.name || 'Administrator'}</p>
+          <p className="truncate text-[11px] text-blue-400">{user?.email || 'admin@tn38portal.com'}</p>
         </div>
         <button
           onClick={handleLogout}
           title="Logout"
-          className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 text-blue-300 hover:text-red-400 hover:bg-white/10 rounded-lg transition-colors"
         >
           <LogOut size={18} />
         </button>
@@ -110,7 +127,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-100 overflow-x-hidden">
+    <div className="min-h-screen flex overflow-x-hidden" style={{ backgroundColor: '#F4F7FC' }}>
       {/* Desktop Sidebar (1024px+) */}
       <aside className="hidden laptop:flex w-64 flex-col flex-shrink-0 shadow-lg z-30">
         {navContent}
@@ -132,7 +149,10 @@ export default function AdminLayout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
         {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+        <header
+          className="bg-white border-b px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs"
+          style={{ borderColor: '#E2E8F0' }}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -141,7 +161,7 @@ export default function AdminLayout() {
             >
               <Menu size={22} />
             </button>
-            <h1 className="text-base sm:text-lg font-bold text-gray-800 truncate">
+            <h1 className="text-base sm:text-lg font-bold truncate" style={{ color: '#172554' }}>
               Admin Portal
             </h1>
           </div>
@@ -149,13 +169,14 @@ export default function AdminLayout() {
           <Link
             to="/"
             target="_blank"
-            className="text-xs sm:text-sm text-orange-600 hover:underline flex items-center gap-1 font-semibold whitespace-nowrap"
+            className="text-xs sm:text-sm hover:underline flex items-center gap-1 font-semibold whitespace-nowrap transition-colors"
+            style={{ color: '#123DAA' }}
           >
             <span>Public Site &rarr;</span>
           </Link>
         </header>
 
-        {/* Scrollable Main View with Horizontal Scroll Protection */}
+        {/* Scrollable Main View */}
         <main className="flex-1 p-3 xs:p-4 sm:p-6 max-w-full overflow-x-auto">
           <Outlet />
         </main>

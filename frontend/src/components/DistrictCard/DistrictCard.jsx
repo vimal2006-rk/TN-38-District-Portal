@@ -8,43 +8,69 @@ export default function DistrictCard({ district }) {
   const name = isTamil ? district.nameTa : district.nameEn;
 
   return (
-    <div className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow duration-300 overflow-hidden border border-gray-100 group">
-      {/* Top color strip */}
-      <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-600" />
+    <div
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border group flex flex-col justify-between"
+      style={{ borderColor: '#E2E8F0' }}
+    >
+      {/* Top Royal Blue accent strip */}
+      <div
+        className="h-1.5 w-full"
+        style={{ background: 'linear-gradient(90deg, #123DAA 0%, #2463D4 100%)' }}
+      />
 
-      <div className="p-5">
-        <h3 className="text-lg font-bold text-gray-800 group-hover:text-orange-600 transition-colors mb-1">
-          {name}
-        </h3>
-        {isTamil && (
-          <p className="text-xs text-gray-400 mb-3">{district.nameEn}</p>
-        )}
-        {!isTamil && district.nameTa && (
-          <p className="text-xs text-gray-400 mb-3">{district.nameTa}</p>
-        )}
+      <div className="p-5 flex flex-col flex-grow justify-between">
+        <div>
+          <h3
+            className="text-lg font-bold transition-colors mb-0.5"
+            style={{ color: '#172554' }}
+          >
+            {name}
+          </h3>
+          {isTamil && (
+            <p className="text-xs mb-3 font-medium" style={{ color: '#64748B' }}>
+              {district.nameEn}
+            </p>
+          )}
+          {!isTamil && district.nameTa && (
+            <p className="text-xs mb-3 font-medium" style={{ color: '#64748B' }}>
+              {district.nameTa}
+            </p>
+          )}
 
-        {/* Member count */}
-        {district._count?.members !== undefined && (
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-            <Users size={15} />
-            <span>{district._count.members} Members</span>
-          </div>
-        )}
+          {/* Member count */}
+          {district._count?.members !== undefined && (
+            <div className="flex items-center gap-1.5 text-xs mb-4" style={{ color: '#64748B' }}>
+              <Users size={14} style={{ color: '#123DAA' }} />
+              <span>{district._count.members} Members</span>
+            </div>
+          )}
+        </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 pt-2">
+          {/* Primary View Details Button: Royal Blue */}
           <Link
             to={`/districts/${district.slug}`}
-            className="text-center text-sm font-medium text-orange-600 border border-orange-600 rounded-lg py-1.5 hover:bg-orange-600 hover:text-white transition-colors"
+            className="text-center text-sm font-semibold rounded-lg py-2 transition-all shadow-sm flex items-center justify-center"
+            style={{ backgroundColor: '#123DAA', color: '#FFFFFF' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#09246B')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#123DAA')}
           >
             View Details
           </Link>
 
+          {/* Secondary Join WhatsApp Button: Green */}
           <a
-            href={district.whatsappGroup?.inviteLink || `https://chat.whatsapp.com/invite-${district.slug}`}
+            href={
+              district.whatsappGroup?.inviteLink ||
+              `https://chat.whatsapp.com/invite-${district.slug}`
+            }
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 text-sm font-medium bg-green-500 text-white rounded-lg py-1.5 hover:bg-green-600 transition-colors"
+            className="flex items-center justify-center gap-1.5 text-sm font-semibold rounded-lg py-2 transition-all shadow-sm"
+            style={{ backgroundColor: '#16A34A', color: '#FFFFFF' }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
           >
             <ExternalLink size={14} />
             <span>Join WhatsApp</span>

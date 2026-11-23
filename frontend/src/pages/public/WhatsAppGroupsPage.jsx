@@ -17,66 +17,96 @@ export default function WhatsAppGroupsPage() {
   }, [search]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <div className="inline-flex p-3 rounded-2xl bg-green-100 text-green-600 mb-1">
-          <MessageCircle size={28} />
+    <div className="min-h-screen py-10" style={{ backgroundColor: '#F4F7FC' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div
+            className="inline-flex p-3 rounded-2xl shadow-sm mb-1"
+            style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
+          >
+            <MessageCircle size={32} />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight" style={{ color: '#172554' }}>
+            {t('whatsapp.title', 'District WhatsApp Groups')}
+          </h1>
+          <p className="text-sm sm:text-base leading-relaxed" style={{ color: '#64748B' }}>
+            {isTa
+              ? 'உங்கள் மாவட்டத்தின் அதிகாரப்பூர்வ வாட்ஸ்அப் குழுவில் இணைந்து உடனுக்குடன் செய்திகளைப் பெறுங்கள்.'
+              : 'Join your district official WhatsApp community group for verified updates, B2B inventory, and association announcements.'}
+          </p>
+
+          {/* Search */}
+          <div className="relative max-w-md mx-auto mt-4">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={isTa ? 'மாவட்டம் தேடுங்கள்...' : 'Filter districts...'}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm shadow-sm focus:outline-none transition-all"
+              style={{ borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', color: '#172554' }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#16A34A';
+                e.target.style.boxShadow = '0 0 0 3px rgba(22, 163, 74, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#E2E8F0';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-          {t('whatsapp.title', 'District WhatsApp Groups')}
-        </h1>
-        <p className="text-gray-500 text-sm sm:text-base">
-          {isTa
-            ? 'உங்கள் மாவட்டத்தின் அதிகாரப்பூர்வ வாட்ஸ்அப் குழுவில் இணைந்து உடனுக்குடன் செய்திகளைப் பெறுங்கள்.'
-            : 'Join your district official WhatsApp community group for verified updates and notifications.'}
-        </p>
 
-        {/* Search */}
-        <div className="relative max-w-md mx-auto mt-4">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={isTa ? 'மாவட்டம் தேடுங்கள்...' : 'Filter districts...'}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm shadow-sm"
-          />
+        {/* Counter */}
+        <div className="flex items-center justify-between text-xs pb-2 border-b" style={{ borderColor: '#E2E8F0', color: '#64748B' }}>
+          <span>{isTa ? `மொத்த குழுக்கள்: ${filtered.length} / 38` : `Showing ${filtered.length} of 38 District Groups`}</span>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 phablet:grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-3 sm:gap-4">
-        {filtered.map((d) => {
-          const name = isTa ? d.nameTa : d.nameEn;
-          const link = `https://chat.whatsapp.com/invite-${d.slug}`;
+        {/* Groups Grid */}
+        <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-4 sm:gap-5">
+          {filtered.map((d) => {
+            const name = isTa ? d.nameTa : d.nameEn;
+            const link = `https://chat.whatsapp.com/invite-${d.slug}`;
 
-          return (
-            <div
-              key={d.id}
-              className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
-            >
-              <div>
-                <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                  <span>District #{d.id}</span>
-                  <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-mono text-[10px]">
-                    ACTIVE
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-gray-800">{name}</h3>
-                <p className="text-xs text-gray-400">{d.nameEn} District Group</p>
-              </div>
-
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2 px-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+            return (
+              <div
+                key={d.id}
+                className="bg-white p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                style={{ borderColor: '#E2E8F0' }}
               >
-                <ExternalLink size={14} />
-                <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
-              </a>
-            </div>
-          );
-        })}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#64748B' }}>
+                    <span className="font-mono">#{d.id < 10 ? `0${d.id}` : d.id}</span>
+                    <span
+                      className="px-2 py-0.5 rounded-full font-bold text-[10px]"
+                      style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
+                    >
+                      OFFICIAL
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold" style={{ color: '#172554' }}>{name}</h3>
+                  <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{d.nameEn} District Group</p>
+                </div>
+
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  style={{ backgroundColor: '#16A34A' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
+                >
+                  <ExternalLink size={14} />
+                  <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
+                </a>
+              </div>
+            );
+          })}
+        </div>
+
       </div>
     </div>
   );

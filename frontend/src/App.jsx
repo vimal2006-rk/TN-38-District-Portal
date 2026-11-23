@@ -2,8 +2,11 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// ─── Lazy-loaded Public Pages ───────────────────────────────────────────────
-const PublicLayout          = React.lazy(() => import('./layouts/PublicLayout'));
+// ─── Layouts (eager — always needed, should NOT be lazy) ──────────────────────
+import PublicLayout from './layouts/PublicLayout';
+import AdminLayout  from './layouts/AdminLayout';
+
+// ─── Lazy-loaded Public Pages ─────────────────────────────────────────────────
 const HomePage              = React.lazy(() => import('./pages/public/HomePage'));
 const AboutPage             = React.lazy(() => import('./pages/public/AboutPage'));
 const StateAdministrationPage = React.lazy(() => import('./pages/public/StateAdministrationPage'));
@@ -19,8 +22,7 @@ const EventDetailPage       = React.lazy(() => import('./pages/public/EventDetai
 const GalleryPage           = React.lazy(() => import('./pages/public/GalleryPage'));
 const ContactPage           = React.lazy(() => import('./pages/public/ContactPage'));
 
-// ─── Lazy-loaded Admin Pages ─────────────────────────────────────────────────
-const AdminLayout           = React.lazy(() => import('./layouts/AdminLayout'));
+// ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
 const AdminLoginPage        = React.lazy(() => import('./pages/admin/AdminLoginPage'));
 const DashboardPage         = React.lazy(() => import('./pages/admin/DashboardPage'));
 const ManageDistrictsPage   = React.lazy(() => import('./pages/admin/ManageDistrictsPage'));
@@ -36,8 +38,11 @@ const ManageTranslationsPage = React.lazy(() => import('./pages/admin/ManageTran
 
 // ─── Loading Fallback ─────────────────────────────────────────────────────────
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-50">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+  <div className="flex items-center justify-center min-h-screen bg-[#F4F7FC]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#123DAA]"></div>
+      <p className="text-[#123DAA] font-semibold text-sm">Loading...</p>
+    </div>
   </div>
 );
 
