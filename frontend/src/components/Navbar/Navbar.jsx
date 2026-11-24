@@ -71,19 +71,19 @@ export default function Navbar() {
               </span>
             </div>
 
-            {/* Mobile Brand Text (< sm, Clean 2-Line Left-Aligned Format) */}
-            <div className="sm:hidden flex flex-col leading-tight min-w-0">
-              <span className="text-white font-bold text-[12px] xs:text-[13px] tracking-tight leading-tight">
-                தமிழ்நாடு மொபைல் சேல்ஸ்
-              </span>
-              <span className="text-white font-bold text-[12px] xs:text-[13px] tracking-tight leading-tight">
-                அண்டு சர்வீஸ் அசோசியேஷன்
+            {/* Mobile Brand Text (< sm) — Single line each */}
+            <div className="sm:hidden flex flex-col leading-tight min-w-0 overflow-hidden">
+              <span
+                className="text-white font-bold tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{ fontSize: 'clamp(9px, 2.8vw, 13px)' }}
+              >
+                தமிழ்நாடு மொபைல் கடைகள் சங்கம்
               </span>
               <span
-                className="text-[10px] font-medium tracking-wide leading-tight mt-0.5"
-                style={{ color: '#F07818' }}
+                className="font-semibold tracking-tight leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{ color: '#F07818', fontSize: 'clamp(8px, 2.4vw, 11px)' }}
               >
-                TMSSA • Reg: 23/2025
+                Tamil Nadu Mobile Shops Association
               </span>
             </div>
           </Link>
