@@ -30,16 +30,16 @@ export default function Footer() {
               />
               <div>
                 <h2 className="text-white text-base font-bold leading-tight">
-                  தமிழ்நாடு மொபைல் கடைகள் சங்கம்
+                  தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
                 </h2>
-                <p style={{ color: '#F07818' }} className="text-xs font-medium">Tamil Nadu Mobile Shops Association</p>
+                <p style={{ color: '#F07818' }} className="text-xs font-medium">Tamilnadu Mobile Sales and Service Association</p>
               </div>
             </div>
             <p className="text-sm leading-relaxed text-blue-300">
               தமிழ்நாட்டின் அனைத்து மாவட்ட மொபைல் விற்பனையாளர்கள் மற்றும் சேவை மையங்களை ஒருங்கிணைக்கும் தலைமை தளம்.
             </p>
             <p className="text-xs text-blue-400 mt-2">
-              Tamil Nadu Mobile Shops Association
+              Tamilnadu Mobile Sales and Service Association
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export default function Footer() {
           style={{ borderColor: 'rgba(255,255,255,0.1)' }}
         >
           <span>
-            © {year} தமிழ்நாடு மொபைல் கடைகள் சங்கம் / Tamil Nadu Mobile Shops Association. All rights reserved.
+            © {year} தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன் / Tamilnadu Mobile Sales and Service Association. All rights reserved.
           </span>
           <span className="flex items-center gap-1">
             Made with <span className="text-red-400">❤</span> for Tamil Nadu

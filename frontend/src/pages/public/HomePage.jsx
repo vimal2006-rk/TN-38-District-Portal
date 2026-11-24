@@ -148,7 +148,7 @@ export default function HomePage() {
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <span className="text-[11px] xs:text-xs sm:text-[13px] font-bold tracking-wide">
-                  தமிழ்நாடு மொபைல் கடைகள் சங்கம்
+                  தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
                 </span>
                 <span
                   className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-mono font-bold"
@@ -162,13 +162,13 @@ export default function HomePage() {
               <div className="space-y-1.5 sm:space-y-2">
                 <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
                   <span className="text-white block">
-                    தமிழ்நாடு மொபைல் கடைகள் சங்கம்
+                    தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
                   </span>
                   <span
                     className="block text-lg xs:text-xl sm:text-2xl md:text-3xl xl:text-4xl font-extrabold mt-0.5 sm:mt-1"
                     style={{ color: '#F07818' }}
                   >
-                    Tamil Nadu Mobile Shops Association
+                    Tamilnadu Mobile Sales and Service Association
                   </span>
                 </h1>
                 <p className="text-xs xs:text-sm sm:text-base xl:text-lg text-blue-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">

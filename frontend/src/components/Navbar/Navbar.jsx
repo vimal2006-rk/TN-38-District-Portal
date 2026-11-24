@@ -50,10 +50,10 @@ export default function Navbar() {
             />
             <div className="flex flex-col leading-tight min-w-0">
               <span className="text-white font-bold text-[11px] xs:text-xs sm:text-sm xl:text-base tracking-tight truncate max-w-[145px] xs:max-w-[185px] sm:max-w-[260px] md:max-w-none">
-                தமிழ்நாடு மொபைல் கடைகள் சங்கம்
+                தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
               </span>
               <span className="hidden xs:block text-blue-200 text-[9px] sm:text-[10px] xl:text-xs tracking-wide truncate max-w-[140px] xs:max-w-[175px] sm:max-w-[260px] md:max-w-none">
-                Tamil Nadu Mobile Shops Association
+                Tamilnadu Mobile Sales and Service Association
               </span>
             </div>
           </Link>
@@ -121,8 +121,8 @@ export default function Navbar() {
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <div>
-                <p className="text-white font-bold text-sm">தமிழ்நாடு மொபைல் கடைகள் சங்கம்</p>
-                <p className="text-blue-200 text-xs">Tamil Nadu Mobile Shops Association</p>
+                <p className="text-white font-bold text-sm">தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்</p>
+                <p className="text-blue-200 text-xs">Tamilnadu Mobile Sales and Service Association</p>
               </div>
             </div>
 
