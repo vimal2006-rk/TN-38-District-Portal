@@ -76,7 +76,7 @@ export default function HomePage() {
           style={{ backgroundColor: '#123DAA' }}
         />
 
-        <div className="relative h-[260px] xs:h-[300px] sm:h-[380px] lg:h-[440px] xl:h-[470px] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-2">
+        <div className="relative h-[240px] xs:h-[270px] sm:h-[340px] md:h-[400px] lg:h-[440px] xl:h-[470px] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-2">
           {HERO_SLIDES.map((slide, idx) => (
             <div
               key={slide.id}
@@ -225,12 +225,12 @@ export default function HomePage() {
               </div>
 
               {/* Main Headline (Clean, Left-Aligned, Perfectly Structured) */}
-              <div className="space-y-1 sm:space-y-1.5">
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-white">
+              <div className="space-y-1.5">
+                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-normal leading-[1.3] text-white">
                   தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
                 </h1>
                 <p
-                  className="text-sm xs:text-base sm:text-lg md:text-xl font-bold tracking-wide"
+                  className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl font-bold tracking-normal leading-snug"
                   style={{ color: '#F07818' }}
                 >
                   Tamilnadu Mobile Sales and Service Association
@@ -243,14 +243,14 @@ export default function HomePage() {
               </div>
 
               {/* President Message Executive Card */}
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border-l-4 border-[#F07818] border-t border-r border-b border-white/15 shadow-sm text-left">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 sm:p-5 border-l-4 border-[#F07818] border-t border-r border-b border-white/15 shadow-sm text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-orange-300 flex items-center gap-1.5">
                     <BadgeCheck size={15} className="text-[#F07818]" />
                     <span>{isTa ? 'மாநில தலைவரின் உரை' : "State President's Message"}</span>
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm md:text-base text-blue-50 leading-relaxed font-normal">
+                <p className="text-xs sm:text-sm md:text-base text-blue-50 leading-[1.65] font-normal">
                   {isTa
                     ? 'இந்த சங்கத்தின் தலைவராகப் பொறுப்பேற்று, பல்வேறு மொபைல் கடை உரிமையாளர்களை ஒருங்கிணைத்து, அவர்களின் வளர்ச்சிக்கும் நலனுக்கும் தொடர்ந்து பாடுபட்டு வருகிறார். வணிகர்களின் பிரச்சினைகளுக்குத் தீர்வு காண்பது, அவர்களின் உரிமைகளைப் பாதுகாப்பது மற்றும் அனைவரையும் ஒன்றிணைத்து முன்னேற்றப் பாதையில் அழைத்துச் செல்வது இவரது முக்கிய நோக்கமாகும்.'
                     : 'As the President of the Association, he is committed to bringing mobile shop owners together and supporting their growth and welfare. His primary objectives are to address the challenges faced by business owners, protect their rights, and unite them towards a stronger and more progressive future.'}

@@ -5,11 +5,14 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   overflow-x: hidden;
+  max-width: 100vw;
   width: 100%;
   min-height: 100vh;
   margin: 0;
@@ -20,12 +23,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.font-tamil,
-[lang="ta"] {
-  font-family: 'Noto Sans Tamil', sans-serif;
+/* Universal safe text wrapping & break prevention */
+h1, h2, h3, h4, h5, h6, p, span, a, button {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-/* Ensure images never overflow their container */
+/* Tamil font optimization with adequate line-height for vowel modifiers */
+.font-tamil,
+[lang="ta"] {
+  font-family: 'Noto Sans Tamil', 'Inter', system-ui, sans-serif;
+}
+
+/* Tamil headings: ensure line-height gives room for kombu/pulli */
+[lang="ta"] h1,
+[lang="ta"] h2,
+[lang="ta"] h3,
+.font-tamil h1,
+.font-tamil h2,
+.font-tamil h3 {
+  line-height: 1.35;
+  letter-spacing: normal;
+}
+
+/* Ensure images & media never overflow their container */
 img, svg, video, canvas, audio, iframe, embed, object {
   display: block;
   max-width: 100%;
