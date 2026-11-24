@@ -34,14 +34,14 @@ export default function Navbar() {
 
   return (
     <header className="w-full sticky top-0 z-50 shadow-md">
-      {/* ── Tier 1: Association Brand Header ──────────────────────── */}
+      {/* ── Tier 1: Association Header (Unified Mobile & Desktop) ────── */}
       <div style={{ backgroundColor: '#09246B' }} className="border-b border-white/10 text-white">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-6">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2.5 sm:gap-6">
           
-          {/* Logo + Full Brand Name (Zero Truncation) */}
+          {/* Logo + Full Brand Name */}
           <Link
             to="/"
-            className="flex items-center gap-2.5 sm:gap-4 hover:opacity-95 transition-opacity min-w-0 flex-1 sm:flex-initial"
+            className="flex items-center gap-2 sm:gap-3.5 hover:opacity-95 transition-opacity min-w-0 flex-1 sm:flex-initial"
           >
             <img
               src="/logo.jpg"
@@ -49,9 +49,11 @@ export default function Navbar() {
               className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-[#F07818] shadow-md flex-shrink-0"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <div className="flex flex-col leading-tight min-w-0">
+            
+            {/* Desktop Brand Text (sm and above) */}
+            <div className="hidden sm:flex flex-col leading-tight min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-white font-extrabold text-[12px] xs:text-sm sm:text-base md:text-lg lg:text-xl tracking-tight leading-snug">
+                <span className="text-white font-extrabold text-sm md:text-base lg:text-lg xl:text-xl tracking-tight leading-snug">
                   தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
                 </span>
                 <span
@@ -62,16 +64,32 @@ export default function Navbar() {
                 </span>
               </div>
               <span
-                className="text-[10px] xs:text-[11px] sm:text-xs md:text-sm font-semibold tracking-wide leading-tight mt-0.5"
+                className="text-xs md:text-sm font-semibold tracking-wide leading-tight mt-0.5"
                 style={{ color: '#F07818' }}
               >
                 Tamilnadu Mobile Sales and Service Association
               </span>
             </div>
+
+            {/* Mobile Brand Text (< sm, Clean 2-Line Left-Aligned Format) */}
+            <div className="sm:hidden flex flex-col leading-tight min-w-0">
+              <span className="text-white font-bold text-[12px] xs:text-[13px] tracking-tight leading-tight">
+                தமிழ்நாடு மொபைல் சேல்ஸ்
+              </span>
+              <span className="text-white font-bold text-[12px] xs:text-[13px] tracking-tight leading-tight">
+                அண்டு சர்வீஸ் அசோசியேஷன்
+              </span>
+              <span
+                className="text-[10px] font-medium tracking-wide leading-tight mt-0.5"
+                style={{ color: '#F07818' }}
+              >
+                TMSSA • Reg: 23/2025
+              </span>
+            </div>
           </Link>
 
           {/* Right Controls: Helpline + Language + Mobile Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             {/* Official Helpline on Desktop */}
             <a
               href="tel:+919944773668"
@@ -85,7 +103,7 @@ export default function Navbar() {
             {/* Language Switcher */}
             <LanguageSwitcher />
 
-            {/* Mobile Toggle Button (Below 1024px) */}
+            {/* Mobile Menu Toggle Button (Below 1024px) */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="laptop:hidden p-1.5 xs:p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/40 flex-shrink-0"
@@ -99,72 +117,42 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ── Tier 2: Dedicated Navigation Bar ──────────────────────── */}
+      {/* ── Tier 2: Dedicated Navigation Bar (Desktop Only - Clean, No Join Now) ── */}
       <nav
         style={{ backgroundColor: '#123DAA' }}
-        className="w-full border-t border-b border-blue-900/60 shadow-md"
+        className="hidden laptop:block w-full border-t border-b border-blue-900/60 shadow-md"
       >
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-11 sm:h-12">
             
-            {/* Desktop Navigation Links (Full Width Available) */}
-            <div className="hidden laptop:flex items-center gap-1 xl:gap-2 flex-nowrap w-full justify-between">
-              <div className="flex items-center gap-0.5 xl:gap-1.5 flex-nowrap">
-                {NAV_LINKS.map((link) => (
-                  <NavLink
-                    key={link.path}
-                    to={link.path}
-                    end={link.path === '/'}
-                    className={({ isActive }) =>
-                      `text-xs xl:text-[13px] 2xl:text-sm font-semibold transition-all duration-200 px-2.5 xl:px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                        isActive
-                          ? 'text-white font-bold bg-white/20 border-b-2 border-[#F07818] shadow-inner'
-                          : 'text-blue-100 hover:text-white hover:bg-white/10'
-                      }`
-                    }
-                  >
-                    {t(link.key, link.label)}
-                  </NavLink>
-                ))}
-              </div>
-
-              {/* Action: Quick Join / Admin */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Link
-                  to="/membership"
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white transition-all shadow-sm flex items-center gap-1"
-                  style={{ backgroundColor: '#16A34A' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
+            {/* All Desktop Navigation Links */}
+            <div className="flex items-center gap-1 xl:gap-2 flex-nowrap w-full justify-start">
+              {NAV_LINKS.map((link) => (
+                <NavLink
+                  key={link.path}
+                  to={link.path}
+                  end={link.path === '/'}
+                  className={({ isActive }) =>
+                    `text-xs xl:text-[13px] 2xl:text-sm font-semibold transition-all duration-200 px-3 xl:px-3.5 py-1.5 rounded-lg whitespace-nowrap ${
+                      isActive
+                        ? 'text-white font-bold bg-white/20 border-b-2 border-[#F07818] shadow-inner'
+                        : 'text-blue-100 hover:text-white hover:bg-white/10'
+                    }`
+                  }
                 >
-                  <span>{t('home.joinNow', 'Join Now / உறுப்பினர்')}</span>
-                </Link>
+                  {t(link.key, link.label)}
+                </NavLink>
+              ))}
 
-                {isAuthenticated && (
-                  <NavLink
-                    to="/admin/dashboard"
-                    className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#F07818] text-white hover:bg-[#d4660f] flex items-center gap-1"
-                  >
-                    <Shield size={13} />
-                    <span>Admin</span>
-                  </NavLink>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile Nav Bar Strip */}
-            <div className="laptop:hidden flex items-center justify-between w-full text-xs">
-              <a href="tel:+919944773668" className="flex items-center gap-1.5 text-blue-200 hover:text-white font-medium">
-                <Phone size={13} style={{ color: '#F07818' }} />
-                <span>+91 99447 73668</span>
-              </a>
-              <Link
-                to="/membership"
-                className="px-3 py-1 rounded-md text-[11px] font-bold text-white shadow-xs"
-                style={{ backgroundColor: '#F07818' }}
-              >
-                {t('home.joinNow', 'Join Now / உறுப்பினர்')}
-              </Link>
+              {isAuthenticated && (
+                <NavLink
+                  to="/admin/dashboard"
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#F07818] text-white hover:bg-[#d4660f] flex items-center gap-1 ml-auto"
+                >
+                  <Shield size={13} />
+                  <span>Admin</span>
+                </NavLink>
+              )}
             </div>
 
           </div>
@@ -173,22 +161,35 @@ export default function Navbar() {
 
       {/* ── Mobile Drawer (Below 1024px) ─────────────────────────── */}
       {menuOpen && (
-        <div className="laptop:hidden fixed inset-0 top-[96px] xs:top-[104px] sm:top-[115px] bg-black/60 backdrop-blur-sm z-50">
+        <div className="laptop:hidden fixed inset-0 top-[60px] xs:top-[64px] sm:top-[70px] bg-black/60 backdrop-blur-sm z-50">
           <div
             style={{ backgroundColor: '#09246B' }}
-            className="border-t-2 border-[#F07818] shadow-2xl px-4 py-5 max-h-[calc(100vh-6rem)] overflow-y-auto"
+            className="border-t-2 border-[#F07818] shadow-2xl px-4 py-5 max-h-[calc(100vh-4.5rem)] overflow-y-auto"
           >
             {/* Logo in mobile drawer */}
             <div className="flex items-center gap-3 px-3 pb-4 mb-3 border-b border-blue-700/60">
               <img
                 src="/logo.jpg"
                 alt="TMSSA Logo"
-                className="h-10 w-10 rounded-full object-cover border-2 border-[#F07818]"
+                className="h-11 w-11 rounded-full object-cover border-2 border-[#F07818]"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <div>
-                <p className="text-white font-bold text-sm">தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்</p>
-                <p className="text-[#F07818] text-xs font-semibold">Tamilnadu Mobile Sales and Service Association</p>
+                <p className="text-white font-bold text-sm leading-tight">
+                  தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
+                </p>
+                <p className="text-[#F07818] text-xs font-semibold mt-0.5">
+                  Tamilnadu Mobile Sales and Service Association
+                </p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#16A34A] text-white font-bold">
+                    Reg: 23/2025
+                  </span>
+                  <a href="tel:+919944773668" className="text-xs text-blue-200 hover:text-white flex items-center gap-1">
+                    <Phone size={12} className="text-[#F07818]" />
+                    <span>+91 99447 73668</span>
+                  </a>
+                </div>
               </div>
             </div>
 
