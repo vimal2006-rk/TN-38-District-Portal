@@ -148,7 +148,7 @@ export default function HomePage() {
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <span className="text-xs sm:text-[13px] font-bold tracking-wide">
-                  தமிழ்நாடு மொபைல் விற்பனை மற்றும் சேவை சங்கம்
+                  தமிழ்நாடு மொபைல் கடைகள் சங்கம்
                 </span>
                 <span
                   className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded font-mono font-bold"
@@ -159,22 +159,22 @@ export default function HomePage() {
               </div>
 
               {/* Main Headline */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h1 className="text-2xl xs:text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
                   <span className="text-white block">
-                    TN 38 மாவட்ட போர்டல்
+                    தமிழ்நாடு மொபைல் கடைகள் சங்கம்
                   </span>
                   <span
                     className="block text-xl xs:text-2xl sm:text-3xl xl:text-4xl font-extrabold mt-1"
                     style={{ color: '#F07818' }}
                   >
-                    Tamil Nadu 38 District Portal
+                    Tamil Nadu Mobile Shops Association
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base xl:text-lg text-blue-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
                   {isTa
-                    ? 'தமிழ்நாட்டின் அனைத்து 38 மாவட்டங்களின் மொபைல் ஷோரூம்கள், மொத்த விற்பனையாளர்கள், உதிரிபாகங்கள் விநியோகம் மற்றும் சர்வீஸ் சென்டர்களை இணைக்கும் அதிகாரப்பூர்வ தலைமை தளம்.'
-                    : 'The official centralized apex digital platform connecting mobile phone sales, service technicians, wholesale dealers, and 38 district trade committees across Tamil Nadu.'}
+                    ? 'இந்த சங்கத்தின் தலைவராகப் பொறுப்பேற்று, பல்வேறு மொபைல் கடை உரிமையாளர்களை ஒருங்கிணைத்து, அவர்களின் வளர்ச்சிக்கும் நலனுக்கும் தொடர்ந்து பாடுபட்டு வருகிறார். வணிகர்களின் பிரச்சினைகளுக்குத் தீர்வு காண்பது, அவர்களின் உரிமைகளைப் பாதுகாப்பது மற்றும் அனைவரையும் ஒன்றிணைத்து முன்னேற்றப் பாதையில் அழைத்துச் செல்வது இவரது முக்கிய நோக்கமாகும்.'
+                    : 'As the President of the Association, he is committed to bringing mobile shop owners together and supporting their growth and welfare. His primary objectives are to address the challenges faced by business owners, protect their rights, and unite them towards a stronger and more progressive future.'}
                 </p>
               </div>
 
