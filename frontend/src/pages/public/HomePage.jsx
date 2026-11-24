@@ -140,18 +140,18 @@ export default function HomePage() {
             <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-center lg:text-left">
               
               {/* Association Badge with Logo */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
                 <img
                   src="/logo.jpg"
                   alt="TMSSA Logo"
-                  className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover border border-[#F07818]"
+                  className="h-5 w-5 rounded-full object-cover border border-[#F07818]"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
-                <span className="text-[11px] xs:text-xs sm:text-[13px] font-bold tracking-wide">
-                  தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
+                <span className="text-xs sm:text-[13px] font-bold tracking-wide">
+                  தமிழ்நாடு மாநில தலைமை அமைப்பு
                 </span>
                 <span
-                  className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-mono font-bold"
+                  className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold text-white"
                   style={{ backgroundColor: '#16A34A' }}
                 >
                   Reg: 23/2025
