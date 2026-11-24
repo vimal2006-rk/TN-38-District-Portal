@@ -11,8 +11,9 @@ const getAllDistricts = async (req, res, next) => {
     const districts = await prisma.district.findMany({
       where,
       include: {
+        whatsappGroup: true,
         _count: {
-          select: { whatsappGroup: true },
+          select: { members: true },
         },
       },
       orderBy: { nameEn: 'asc' },
