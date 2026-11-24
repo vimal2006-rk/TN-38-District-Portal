@@ -23,11 +23,9 @@ import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 
 const HERO_SLIDES = [
-  { id: 1, image: '/hero/hero-1.png', alt: 'TMSSA Leader 1' },
+  { id: 1, image: '/hero/hero-1.jpg', alt: 'TMSSA Leader 1' },
   { id: 2, image: '/hero/hero-2.jpg', alt: 'TMSSA Leader 2' },
-  { id: 3, image: '/hero/hero-3.png', alt: 'TMSSA Leader 3' },
-  { id: 4, image: '/hero/hero-4.jpg', alt: 'TMSSA Leader 4' },
-  { id: 5, image: '/hero/hero-5.jpg', alt: 'TMSSA Leader 5' }
+  { id: 3, image: '/hero/hero-3.jpg', alt: 'TMSSA Leader 3' }
 ];
 
 export default function HomePage() {
@@ -254,7 +252,7 @@ export default function HomePage() {
                 />
 
                 {/* Active Slide Image Container (Preserving original aspect ratio & quality without cropping) */}
-                <div className="relative h-[380px] xs:h-[420px] sm:h-[460px] w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#09246B]/40 to-[#07173b]/70 flex items-center justify-center p-2">
+                <div className="relative h-[380px] xs:h-[420px] sm:h-[460px] w-full rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-2">
                   {HERO_SLIDES.map((slide, idx) => (
                     <div
                       key={slide.id}
@@ -267,7 +265,7 @@ export default function HomePage() {
                       <img
                         src={slide.image}
                         alt={slide.alt}
-                        className="h-full w-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)] select-none"
+                        className="h-full w-full object-contain filter drop-shadow-md select-none rounded-xl"
                         loading={idx === 0 ? 'eager' : 'lazy'}
                       />
                     </div>
