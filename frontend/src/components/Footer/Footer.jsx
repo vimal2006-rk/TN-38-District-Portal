@@ -30,17 +30,16 @@ export default function Footer() {
               />
               <div>
                 <h2 className="text-white text-base font-bold leading-tight">
-                  TN 38 மாவட்ட போர்டல்
+                  தமிழ்நாடு மொபைல் கடைகள் சங்கம்
                 </h2>
-                <p style={{ color: '#F07818' }} className="text-xs font-medium">TN 38 District Portal</p>
+                <p style={{ color: '#F07818' }} className="text-xs font-medium">Tamil Nadu Mobile Shops Association</p>
               </div>
             </div>
             <p className="text-sm leading-relaxed text-blue-300">
-              Connecting all 38 districts of Tamil Nadu — bringing communities
-              closer through information, events, and membership services.
+              தமிழ்நாட்டின் அனைத்து மாவட்ட மொபைல் விற்பனையாளர்கள் மற்றும் சேவை மையங்களை ஒருங்கிணைக்கும் தலைமை தளம்.
             </p>
             <p className="text-xs text-blue-400 mt-2">
-              Tamilnadu Mobile Sales & Service Association
+              Tamil Nadu Mobile Shops Association
             </p>
           </div>
 
@@ -73,17 +72,18 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin size={16} style={{ color: '#F07818' }} className="mt-0.5 flex-shrink-0" />
                 <span className="text-blue-300">
-                  Tamil Nadu, India<br />
-                  (Address Placeholder)
+                  Tamil Nadu, India
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={15} style={{ color: '#F07818' }} className="flex-shrink-0" />
-                <span className="text-blue-300">+91 00000 00000</span>
+                <a href="tel:+919944773668" className="text-blue-300 hover:text-white transition-colors font-medium">
+                  +91 99447 73668
+                </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={15} style={{ color: '#F07818' }} className="flex-shrink-0" />
-                <span className="text-blue-300">info@tn38portal.com</span>
+                <span className="text-blue-300">info@tnmssa.com</span>
               </li>
             </ul>
 
@@ -105,7 +105,7 @@ export default function Footer() {
           style={{ borderColor: 'rgba(255,255,255,0.1)' }}
         >
           <span>
-            © {year} TN 38 District Portal / TN 38 மாவட்ட போர்டல். All rights reserved.
+            © {year} தமிழ்நாடு மொபைல் கடைகள் சங்கம் / Tamil Nadu Mobile Shops Association. All rights reserved.
           </span>
           <span className="flex items-center gap-1">
             Made with <span className="text-red-400">❤</span> for Tamil Nadu

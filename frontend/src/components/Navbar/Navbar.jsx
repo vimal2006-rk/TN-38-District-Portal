@@ -50,10 +50,10 @@ export default function Navbar() {
             />
             <div className="flex flex-col leading-tight">
               <span className="text-white font-bold text-xs sm:text-sm xl:text-base tracking-tight whitespace-nowrap">
-                TN 38 மாவட்ட போர்டல்
+                தமிழ்நாடு மொபைல் கடைகள் சங்கம்
               </span>
               <span className="text-blue-200 text-[9px] sm:text-[10px] xl:text-xs tracking-wide whitespace-nowrap">
-                TN 38 District Portal
+                Tamil Nadu Mobile Shops Association
               </span>
             </div>
           </Link>
@@ -121,8 +121,8 @@ export default function Navbar() {
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <div>
-                <p className="text-white font-bold text-sm">TN 38 District Portal</p>
-                <p className="text-blue-200 text-xs">Tamil Nadu Mobile Sales & Service Association</p>
+                <p className="text-white font-bold text-sm">தமிழ்நாடு மொபைல் கடைகள் சங்கம்</p>
+                <p className="text-blue-200 text-xs">Tamil Nadu Mobile Shops Association</p>
               </div>
             </div>
 

@@ -35,7 +35,9 @@ export default function ContactPage() {
           </div>
           <h3 className="font-bold text-gray-900 text-base">{t('contact.phone', 'Phone Numbers')}</h3>
           <p className="text-xs text-gray-500 leading-relaxed">
-            +91 44 2855 0000<br />+91 94440 12345
+            <a href="tel:+919944773668" className="hover:text-blue-600 transition-colors font-semibold">
+              +91 99447 73668
+            </a>
           </p>
         </div>
 
