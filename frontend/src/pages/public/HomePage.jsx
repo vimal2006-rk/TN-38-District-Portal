@@ -133,25 +133,25 @@ export default function HomePage() {
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#123DAA]/30 blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-[#16A34A]/25 blur-3xl pointer-events-none"></div>
 
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-14 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
 
             {/* Left Column: Association Branding & Headings (7 Cols on Desktop) */}
-            <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-center lg:text-left">
               
               {/* Association Badge with Logo */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
                 <img
                   src="/logo.jpg"
                   alt="TMSSA Logo"
-                  className="h-6 w-6 rounded-full object-cover border border-[#F07818]"
+                  className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover border border-[#F07818]"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
-                <span className="text-xs sm:text-[13px] font-bold tracking-wide">
+                <span className="text-[11px] xs:text-xs sm:text-[13px] font-bold tracking-wide">
                   தமிழ்நாடு மொபைல் கடைகள் சங்கம்
                 </span>
                 <span
-                  className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded font-mono font-bold"
+                  className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-mono font-bold"
                   style={{ backgroundColor: '#16A34A' }}
                 >
                   Reg: 23/2025
@@ -159,19 +159,19 @@ export default function HomePage() {
               </div>
 
               {/* Main Headline */}
-              <div className="space-y-3">
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
+              <div className="space-y-1.5 sm:space-y-2">
+                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
                   <span className="text-white block">
                     தமிழ்நாடு மொபைல் கடைகள் சங்கம்
                   </span>
                   <span
-                    className="block text-xl xs:text-2xl sm:text-3xl xl:text-4xl font-extrabold mt-1"
+                    className="block text-lg xs:text-xl sm:text-2xl md:text-3xl xl:text-4xl font-extrabold mt-0.5 sm:mt-1"
                     style={{ color: '#F07818' }}
                   >
                     Tamil Nadu Mobile Shops Association
                   </span>
                 </h1>
-                <p className="text-sm sm:text-base xl:text-lg text-blue-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                <p className="text-xs xs:text-sm sm:text-base xl:text-lg text-blue-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
                   {isTa
                     ? 'இந்த சங்கத்தின் தலைவராகப் பொறுப்பேற்று, பல்வேறு மொபைல் கடை உரிமையாளர்களை ஒருங்கிணைத்து, அவர்களின் வளர்ச்சிக்கும் நலனுக்கும் தொடர்ந்து பாடுபட்டு வருகிறார். வணிகர்களின் பிரச்சினைகளுக்குத் தீர்வு காண்பது, அவர்களின் உரிமைகளைப் பாதுகாப்பது மற்றும் அனைவரையும் ஒன்றிணைத்து முன்னேற்றப் பாதையில் அழைத்துச் செல்வது இவரது முக்கிய நோக்கமாகும்.'
                     : 'As the President of the Association, he is committed to bringing mobile shop owners together and supporting their growth and welfare. His primary objectives are to address the challenges faced by business owners, protect their rights, and unite them towards a stronger and more progressive future.'}
@@ -179,7 +179,7 @@ export default function HomePage() {
               </div>
 
               {/* Association Quick Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-1">
                 {[
                   { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#60a5fa' },
                   { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#4ade80' },
@@ -188,12 +188,12 @@ export default function HomePage() {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 sm:p-3 border border-white/15 text-center shadow-xs"
+                    className="bg-white/10 backdrop-blur-md rounded-lg sm:rounded-xl p-2 sm:p-2.5 border border-white/15 text-center shadow-xs"
                   >
-                    <div className="text-base sm:text-xl font-black" style={{ color: item.color }}>
+                    <div className="text-sm xs:text-base sm:text-xl font-black" style={{ color: item.color }}>
                       {item.value}
                     </div>
-                    <div className="text-[11px] sm:text-xs text-blue-200 font-medium">
+                    <div className="text-[10px] sm:text-xs text-blue-200 font-medium">
                       {item.label}
                     </div>
                   </div>
@@ -201,58 +201,58 @@ export default function HomePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+              <div className="flex flex-col xs:flex-row flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 pt-1">
                 <Link
                   to="/membership"
-                  className="px-5 sm:px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 text-xs sm:text-sm text-white"
+                  className="w-full xs:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm text-white"
                   style={{ backgroundColor: '#F07818' }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4660f')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F07818')}
                 >
                   <span>{t('home.joinNow', 'Join Now / உறுப்பினர் பதிவு')}</span>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={15} />
                 </Link>
 
                 <Link
                   to="/districts"
-                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white border border-white/30 transition-all flex items-center gap-2 text-xs sm:text-sm hover:bg-white/15 backdrop-blur-xs"
+                  className="w-full xs:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white border border-white/30 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm hover:bg-white/15 backdrop-blur-xs"
                 >
-                  <MapPin size={16} />
+                  <MapPin size={15} />
                   <span>{t('home.viewDistricts', 'All 38 Districts')}</span>
                 </Link>
 
                 <Link
                   to="/whatsapp-groups"
-                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white transition-all flex items-center gap-2 shadow-md text-xs sm:text-sm"
+                  className="w-full xs:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm"
                   style={{ backgroundColor: '#16A34A' }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
                 >
-                  <MessageCircle size={16} />
+                  <MessageCircle size={15} />
                   <span>WhatsApp Groups</span>
                 </Link>
               </div>
 
             </div>
 
-            {/* Right Column: 5-Image Carousel Stage (Clean, Auto-Rotating Every 5s, Badge Removed) */}
-            <div className="lg:col-span-5 relative flex flex-col items-center">
+            {/* Right Column: Carousel Stage */}
+            <div className="lg:col-span-5 relative flex flex-col items-center w-full">
               
               {/* Carousel Display Frame */}
-              <div className="w-full max-w-[420px] sm:max-w-[460px] relative rounded-3xl p-3 sm:p-4 bg-gradient-to-b from-white/15 to-white/5 border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden group">
+              <div className="w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[420px] lg:max-w-[460px] relative rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 bg-gradient-to-b from-white/15 to-white/5 border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden group">
                 
                 {/* Glow ring in green and blue */}
                 <div
-                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-2xl pointer-events-none opacity-60"
+                  className="absolute -top-16 -right-16 w-36 h-36 rounded-full blur-2xl pointer-events-none opacity-60"
                   style={{ backgroundColor: '#16A34A' }}
                 />
                 <div
-                  className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full blur-2xl pointer-events-none opacity-60"
+                  className="absolute -bottom-16 -left-16 w-36 h-36 rounded-full blur-2xl pointer-events-none opacity-60"
                   style={{ backgroundColor: '#123DAA' }}
                 />
 
-                {/* Active Slide Image Container (Preserving original aspect ratio & quality without cropping) */}
-                <div className="relative h-[380px] xs:h-[420px] sm:h-[460px] w-full rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-2">
+                {/* Active Slide Image Container */}
+                <div className="relative h-[270px] xs:h-[310px] sm:h-[380px] lg:h-[430px] xl:h-[460px] w-full rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-2">
                   {HERO_SLIDES.map((slide, idx) => (
                     <div
                       key={slide.id}
@@ -265,7 +265,7 @@ export default function HomePage() {
                       <img
                         src={slide.image}
                         alt={slide.alt}
-                        className="h-full w-full object-contain filter drop-shadow-md select-none rounded-xl"
+                        className="h-full w-full object-contain filter drop-shadow-md select-none rounded-lg sm:rounded-xl"
                         loading={idx === 0 ? 'eager' : 'lazy'}
                       />
                     </div>
@@ -275,32 +275,32 @@ export default function HomePage() {
                 {/* Previous & Next Navigation Buttons */}
                 <button
                   onClick={handlePrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label="Previous image"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={18} className="sm:w-5 sm:h-5" />
                 </button>
 
                 <button
                   onClick={handleNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2.5 rounded-full bg-black/50 hover:bg-[#123DAA] text-white border border-white/20 backdrop-blur-md shadow-lg transition-all z-20 focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label="Next image"
                 >
-                  <ChevronRight size={20} />
+                  <ChevronRight size={18} className="sm:w-5 sm:h-5" />
                 </button>
 
               </div>
 
               {/* Dot Indicators */}
-              <div className="flex items-center gap-2 mt-4 z-10">
+              <div className="flex items-center gap-2 mt-3 sm:mt-4 z-10">
                 {HERO_SLIDES.map((slide, idx) => (
                   <button
                     key={slide.id}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 focus:outline-none ${
+                    className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 focus:outline-none ${
                       idx === currentSlide
-                        ? 'w-8 bg-[#F07818] shadow-md'
-                        : 'w-2.5 bg-white/40 hover:bg-white/80'
+                        ? 'w-6 sm:w-8 bg-[#F07818] shadow-md'
+                        : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/80'
                     }`}
                     aria-label={`Go to image ${idx + 1}`}
                   />

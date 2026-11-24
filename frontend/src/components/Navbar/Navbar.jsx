@@ -40,33 +40,33 @@ export default function Navbar() {
           {/* Logo + Brand */}
           <Link
             to="/"
-            className="flex items-center gap-2 sm:gap-2.5 hover:opacity-90 transition-opacity flex-shrink-0"
+            className="flex items-center gap-1.5 sm:gap-2.5 hover:opacity-90 transition-opacity flex-shrink min-w-0"
           >
             <img
               src="/logo.jpg"
               alt="TMSSA Logo"
-              className="h-10 w-10 sm:h-11 sm:w-11 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0"
+              className="h-8 w-8 xs:h-9 xs:w-9 sm:h-10 sm:w-10 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
-            <div className="flex flex-col leading-tight">
-              <span className="text-white font-bold text-xs sm:text-sm xl:text-base tracking-tight whitespace-nowrap">
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-white font-bold text-[11px] xs:text-xs sm:text-sm xl:text-base tracking-tight truncate max-w-[145px] xs:max-w-[185px] sm:max-w-[260px] md:max-w-none">
                 தமிழ்நாடு மொபைல் கடைகள் சங்கம்
               </span>
-              <span className="text-blue-200 text-[9px] sm:text-[10px] xl:text-xs tracking-wide whitespace-nowrap">
+              <span className="hidden xs:block text-blue-200 text-[9px] sm:text-[10px] xl:text-xs tracking-wide truncate max-w-[140px] xs:max-w-[175px] sm:max-w-[260px] md:max-w-none">
                 Tamil Nadu Mobile Shops Association
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation (1024px and above) */}
-          <nav className="hidden laptop:flex items-center gap-0.5 xl:gap-1 2xl:gap-1.5 flex-wrap justify-center">
+          <nav className="hidden laptop:flex items-center gap-0.5 xl:gap-1 2xl:gap-1.5 flex-nowrap justify-center">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.path}
                 to={link.path}
                 end={link.path === '/'}
                 className={({ isActive }) =>
-                  `text-xs xl:text-[13px] 2xl:text-sm font-medium transition-all duration-200 px-2 xl:px-2.5 py-1.5 rounded-lg whitespace-nowrap ${
+                  `text-[11px] xl:text-xs 2xl:text-sm font-medium transition-all duration-200 px-1.5 xl:px-2.5 py-1.5 rounded-lg whitespace-nowrap ${
                     isActive
                       ? 'text-white font-bold bg-white/20 border-b-2 border-[#F07818] shadow-inner'
                       : 'text-blue-100 hover:text-white hover:bg-white/10'
@@ -80,26 +80,26 @@ export default function Navbar() {
             {isAuthenticated && (
               <NavLink
                 to="/admin/dashboard"
-                className="text-xs xl:text-[13px] font-semibold transition-all duration-200 px-2 xl:px-2.5 py-1.5 rounded-lg bg-[#F07818] text-white hover:bg-[#d4660f] flex items-center gap-1 ml-1"
+                className="text-[11px] xl:text-xs font-semibold transition-all duration-200 px-2 py-1.5 rounded-lg bg-[#F07818] text-white hover:bg-[#d4660f] flex items-center gap-1 ml-1 flex-shrink-0"
               >
-                <Shield size={14} />
+                <Shield size={13} />
                 <span>Admin</span>
               </NavLink>
             )}
           </nav>
 
           {/* Right Section: Language Switcher + Mobile Toggle */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
 
             {/* Mobile Toggle Button */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="laptop:hidden p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/40"
+              className="laptop:hidden p-1.5 xs:p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/40 flex-shrink-0"
               aria-label="Toggle navigation menu"
               aria-expanded={menuOpen}
             >
-              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
