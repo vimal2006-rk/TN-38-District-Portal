@@ -12,13 +12,14 @@ export default function DistrictCard({ district }) {
   const localData = TN_DISTRICTS.find(
     (ld) => ld.slug === district.slug || String(ld.id) === String(district.id)
   );
+  // hasRealLink = ONLY true for 25 districts that have whatsappLink in TN_DISTRICTS
+  const realWhatsappLink = localData?.whatsappLink || null;
+  const hasRealLink = !!realWhatsappLink;
+  // Button uses real link if available, otherwise API/fallback link
   const whatsappLink =
-    localData?.whatsappLink ||
+    realWhatsappLink ||
     district.whatsappGroup?.inviteLink ||
-    district.whatsappLink ||
-    null;
-
-  const hasRealLink = !!whatsappLink;
+    `https://chat.whatsapp.com/invite-${district.slug}`;
 
   return (
     <div
