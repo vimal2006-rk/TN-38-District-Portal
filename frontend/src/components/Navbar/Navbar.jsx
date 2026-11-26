@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { key: 'nav.home',           label: 'Home',           path: '/' },
   { key: 'nav.districts',      label: 'Districts',      path: '/districts' },
   { key: 'nav.membership',     label: 'Membership',     path: '/membership' },
-  { key: 'nav.whatsapp',       label: 'WhatsApp',       path: '/whatsapp-groups' },
   { key: 'nav.news',           label: 'News',           path: '/news' },
   { key: 'nav.events',         label: 'Events',         path: '/events' },
   { key: 'nav.gallery',        label: 'Gallery',        path: '/gallery' },

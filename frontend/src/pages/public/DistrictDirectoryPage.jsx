@@ -15,7 +15,14 @@ export default function DistrictDirectoryPage() {
     api.get('/districts')
       .then((res) => {
         if (res.data?.data?.length > 0) {
-          setDistricts(res.data.data);
+          // Merge API data with local whatsappLink so real links are preserved
+          const merged = res.data.data.map((d) => {
+            const local = TN_DISTRICTS.find(
+              (ld) => ld.slug === d.slug || String(ld.id) === String(d.id)
+            );
+            return { ...d, whatsappLink: local?.whatsappLink || d.whatsappLink };
+          });
+          setDistricts(merged);
         }
       })
       .catch(() => {
