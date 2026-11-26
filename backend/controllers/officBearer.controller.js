@@ -1,10 +1,12 @@
 const prisma = require('../config/database');
+const { logActivity } = require('../services/activityLog.service');
+const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
 
 const getOfficBearersByDistrict = async (req, res, next) => {
   try {
     const { districtId } = req.params;
     const bearers = await prisma.officBearer.findMany({
-      where: { districtId: parseInt(districtId), isActive: true },
+      where: { districtId: parseInt(districtId, 10), isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
     return res.status(200).json({ success: true, data: bearers });
@@ -15,14 +17,25 @@ const getOfficBearersByDistrict = async (req, res, next) => {
 
 const getAllOfficBearers = async (req, res, next) => {
   try {
-    const { districtId } = req.query;
+    const { districtId, search } = req.query;
     const where = { isActive: true };
-    if (districtId) where.districtId = parseInt(districtId);
+    if (districtId && districtId !== 'all') where.districtId = parseInt(districtId, 10);
+
+    if (search && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { nameEn: { contains: q, mode: 'insensitive' } },
+        { nameTa: { contains: q, mode: 'insensitive' } },
+        { roleEn: { contains: q, mode: 'insensitive' } },
+        { roleTa: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ];
+    }
 
     const bearers = await prisma.officBearer.findMany({
       where,
-      include: { district: { select: { nameEn: true, nameTa: true } } },
-      orderBy: [{ district: { nameEn: 'asc' } }, { sortOrder: 'asc' }],
+      include: { district: { select: { id: true, nameEn: true, nameTa: true, slug: true } } },
+      orderBy: [{ district: { nameEn: 'asc' } }, { sortOrder: 'asc' }, { id: 'desc' }],
     });
     return res.status(200).json({ success: true, data: bearers });
   } catch (err) {
@@ -34,11 +47,11 @@ const getOfficBearerById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const bearer = await prisma.officBearer.findUnique({
-      where: { id: parseInt(id) },
-      include: { district: { select: { nameEn: true, nameTa: true } } },
+      where: { id: parseInt(id, 10) },
+      include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
     if (!bearer) {
-      return res.status(404).json({ success: false, message: 'Office bearer not found' });
+      return res.status(404).json({ success: false, message: 'Administration member not found' });
     }
     return res.status(200).json({ success: true, data: bearer });
   } catch (err) {
@@ -49,13 +62,33 @@ const getOfficBearerById = async (req, res, next) => {
 const createOfficBearer = async (req, res, next) => {
   try {
     const { districtId, nameEn, nameTa, roleEn, roleTa, phone, photoUrl, sortOrder } = req.body;
-    const imageUrl = req.file ? req.file.path : photoUrl || null;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : photoUrl || null;
+
+    if (!districtId || (!nameEn?.trim() && !nameTa?.trim())) {
+      return res.status(400).json({ success: false, message: 'District and member name are required.' });
+    }
 
     const bearer = await prisma.officBearer.create({
       data: {
-        districtId: parseInt(districtId), nameEn, nameTa, roleEn, roleTa,
-        phone, photoUrl: imageUrl, sortOrder: sortOrder ? parseInt(sortOrder) : 0,
+        districtId: parseInt(districtId, 10),
+        nameEn: (nameEn || nameTa || '').trim(),
+        nameTa: (nameTa || nameEn || '').trim(),
+        roleEn: (roleEn || roleTa || 'Office Bearer').trim(),
+        roleTa: (roleTa || roleEn || 'நிர்வாகி').trim(),
+        phone: phone?.trim() || null,
+        photoUrl: imageUrl,
+        sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
       },
+      include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
+    });
+
+    await logActivity({
+      userId: req.user?.id,
+      action: 'CREATE_ADMINISTRATION',
+      entityType: 'ADMINISTRATION',
+      entityId: bearer.id,
+      details: `Added administration member: ${bearer.nameEn} (${bearer.roleEn})`,
+      req,
     });
 
     return res.status(201).json({ success: true, data: bearer });
@@ -66,18 +99,33 @@ const createOfficBearer = async (req, res, next) => {
 
 const updateOfficBearer = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { nameEn, nameTa, roleEn, roleTa, phone, photoUrl, sortOrder, isActive } = req.body;
-    const imageUrl = req.file ? req.file.path : photoUrl;
+    const bearerId = parseInt(req.params.id, 10);
+    const { districtId, nameEn, nameTa, roleEn, roleTa, phone, photoUrl, sortOrder, isActive } = req.body;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : photoUrl;
 
     const bearer = await prisma.officBearer.update({
-      where: { id: parseInt(id) },
+      where: { id: bearerId },
       data: {
-        nameEn, nameTa, roleEn, roleTa, phone,
-        ...(imageUrl !== undefined && { photoUrl: imageUrl }),
-        ...(sortOrder !== undefined && { sortOrder: parseInt(sortOrder) }),
+        ...(districtId && { districtId: parseInt(districtId, 10) }),
+        ...(nameEn !== undefined && { nameEn: nameEn.trim() }),
+        ...(nameTa !== undefined && { nameTa: nameTa.trim() }),
+        ...(roleEn !== undefined && { roleEn: roleEn.trim() }),
+        ...(roleTa !== undefined && { roleTa: roleTa.trim() }),
+        ...(phone !== undefined && { phone: phone.trim() || null }),
+        ...(imageUrl !== undefined && { photoUrl: imageUrl || null }),
+        ...(sortOrder !== undefined && { sortOrder: parseInt(sortOrder, 10) }),
         ...(isActive !== undefined && { isActive: isActive === true || isActive === 'true' }),
       },
+      include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
+    });
+
+    await logActivity({
+      userId: req.user?.id,
+      action: 'UPDATE_ADMINISTRATION',
+      entityType: 'ADMINISTRATION',
+      entityId: bearer.id,
+      details: `Updated administration member: ${bearer.nameEn}`,
+      req,
     });
 
     return res.status(200).json({ success: true, data: bearer });
@@ -88,15 +136,34 @@ const updateOfficBearer = async (req, res, next) => {
 
 const deleteOfficBearer = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    await prisma.officBearer.update({ where: { id: parseInt(id) }, data: { isActive: false } });
-    return res.status(200).json({ success: true, message: 'Office bearer deactivated' });
+    const bearerId = parseInt(req.params.id, 10);
+    const existing = await prisma.officBearer.findUnique({ where: { id: bearerId } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Administration member not found' });
+    }
+
+    await prisma.officBearer.delete({ where: { id: bearerId } });
+
+    await logActivity({
+      userId: req.user?.id,
+      action: 'DELETE_ADMINISTRATION',
+      entityType: 'ADMINISTRATION',
+      entityId: bearerId,
+      details: `Deleted administration member: ${existing.nameEn}`,
+      req,
+    });
+
+    return res.status(200).json({ success: true, message: 'Administration member deleted' });
   } catch (err) {
     next(err);
   }
 };
 
 module.exports = {
-  getOfficBearersByDistrict, getAllOfficBearers, getOfficBearerById,
-  createOfficBearer, updateOfficBearer, deleteOfficBearer,
+  getOfficBearersByDistrict,
+  getAllOfficBearers,
+  getOfficBearerById,
+  createOfficBearer,
+  updateOfficBearer,
+  deleteOfficBearer,
 };

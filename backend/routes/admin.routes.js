@@ -26,6 +26,12 @@ const {
   togglePublishMedia,
   deleteMedia,
 } = require('../controllers/gallery.controller');
+const {
+  getAllOfficBearers,
+  createOfficBearer,
+  updateOfficBearer,
+  deleteOfficBearer,
+} = require('../controllers/officBearer.controller');
 
 const { authenticate, authorizeRoles, optionalAuthenticate } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
@@ -73,5 +79,11 @@ router.post('/gallery', uploadGalleryMultiple, uploadMedia);
 router.put('/gallery/:id', updateMedia);
 router.patch('/gallery/:id/publish', togglePublishMedia);
 router.delete('/gallery/:id', deleteMedia);
+
+// ── Administration / Office Bearers Management ────────────────────────────────
+router.get('/administration', getAllOfficBearers);
+router.post('/administration', uploadSingle, createOfficBearer);
+router.put('/administration/:id', uploadSingle, updateOfficBearer);
+router.delete('/administration/:id', deleteOfficBearer);
 
 module.exports = router;

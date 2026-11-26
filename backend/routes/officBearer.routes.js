@@ -10,8 +10,8 @@ const { uploadSingle } = require('../middleware/upload.middleware');
 // GET /api/offic-bearers/district/:districtId — public
 router.get('/district/:districtId', getOfficBearersByDistrict);
 
-// GET /api/offic-bearers — admin
-router.get('/', authenticate, authorizeRoles('SUPER_ADMIN', 'DISTRICT_ADMIN'), getAllOfficBearers);
+// GET /api/office-bearers — public
+router.get('/', getAllOfficBearers);
 
 // GET /api/offic-bearers/:id
 router.get('/:id', getOfficBearerById);

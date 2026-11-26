@@ -1,25 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Users, Filter } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
+import api from '../../services/api';
 
 export default function OfficeBearersPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
   const [selectedDistrict, setSelectedDistrict] = useState('all');
+  const [bearers, setBearers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const sampleBearers = [
-    { id: 1, district: 'Chennai', districtTa: 'சென்னை', nameEn: 'R. Senthil Kumar', nameTa: 'ஆர். செந்தில் குமார்', roleEn: 'District President', roleTa: 'மாவட்ட தலைவர்', phone: '+91 98400 12345' },
-    { id: 2, district: 'Chennai', districtTa: 'சென்னை', nameEn: 'M. Anand', nameTa: 'எம். ஆனந்த்', roleEn: 'District Secretary', roleTa: 'மாவட்ட செயலாளர்', phone: '+91 98400 23456' },
-    { id: 3, district: 'Madurai', districtTa: 'மதுரை', nameEn: 'K. Murugan', nameTa: 'கே. முருகன்', roleEn: 'District President', roleTa: 'மாவட்ட தலைவர்', phone: '+91 98400 34567' },
-    { id: 4, district: 'Coimbatore', districtTa: 'கோயம்புத்தூர்', nameEn: 'S. Rajesh', nameTa: 'எஸ். ராஜேஷ்', roleEn: 'District President', roleTa: 'மாவட்ட தலைவர்', phone: '+91 98400 45678' },
-    { id: 5, district: 'Salem', districtTa: 'சேலம்', nameEn: 'P. Karuppiah', nameTa: 'பி. கருப்பையா', roleEn: 'District President', roleTa: 'மாவட்ட தலைவர்', phone: '+91 98400 56789' },
-    { id: 6, district: 'Tiruchirappalli', districtTa: 'திருச்சிராப்பள்ளி', nameEn: 'V. Ramanathan', nameTa: 'வி. ராமநாதன்', roleEn: 'District President', roleTa: 'மாவட்ட தலைவர்', phone: '+91 98400 67890' },
-  ];
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/office-bearers', { headers: { 'Cache-Control': 'no-cache' } })
+      .then((res) => {
+        if (active) setBearers(res.data?.data || []);
+      })
+      .catch(() => {
+        if (active) setBearers([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const filtered = selectedDistrict === 'all'
-    ? sampleBearers
-    : sampleBearers.filter((b) => b.district.toLowerCase() === selectedDistrict.toLowerCase());
+  const filtered = useMemo(() => {
+    if (selectedDistrict === 'all') return bearers;
+    return bearers.filter(
+      (b) => (b.district?.nameEn || '').toLowerCase() === selectedDistrict.toLowerCase()
+    );
+  }, [bearers, selectedDistrict]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
@@ -50,18 +65,47 @@ export default function OfficeBearersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
-        {filtered.map((b) => (
-          <div key={b.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-            <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
-              {isTa ? b.districtTa : b.district}
-            </span>
-            <h3 className="text-base font-bold text-gray-900">{isTa ? b.nameTa : b.nameEn}</h3>
-            <p className="text-xs text-gray-500 font-medium">{isTa ? b.roleTa : b.roleEn}</p>
-            <p className="text-xs text-gray-400 pt-2 border-t border-gray-50">{b.phone}</p>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="bg-white rounded-2xl border border-gray-100 h-44 animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 text-gray-500 text-sm">
+          {isTa ? 'நிர்வாகிகள் விவரங்கள் எதுவும் இல்லை.' : 'No administration members found.'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
+          {filtered.map((b) => (
+            <div key={b.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
+                  {isTa ? b.district?.nameTa || b.district?.nameEn : b.district?.nameEn || 'District'}
+                </span>
+                {b.photoUrl && (
+                  <img src={b.photoUrl} alt={b.nameEn} className="w-11 h-11 rounded-full object-cover border" />
+                )}
+              </div>
+              <h3 className="text-base font-bold text-gray-900">
+                {isTa ? b.nameTa || b.nameEn : b.nameEn}
+              </h3>
+              <p className="text-xs text-gray-500 font-medium">
+                {isTa ? b.roleTa || b.roleEn : b.roleEn}
+              </p>
+              {b.phone && (
+                <a
+                  href={`tel:${b.phone}`}
+                  className="text-xs text-gray-500 hover:text-orange-600 pt-2 border-t border-gray-50 flex items-center gap-1.5"
+                >
+                  <Phone size={12} />
+                  <span>{b.phone}</span>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

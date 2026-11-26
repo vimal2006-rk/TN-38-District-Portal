@@ -6,6 +6,7 @@ import {
   Newspaper,
   Calendar,
   Image,
+  Award,
   Settings,
   LogOut,
   Menu,
@@ -17,6 +18,7 @@ const ADMIN_LINKS = [
   { label: 'News & Updates', path: '/admin/news', icon: Newspaper },
   { label: 'Events', path: '/admin/events', icon: Calendar },
   { label: 'Gallery', path: '/admin/gallery', icon: Image },
+  { label: 'Administration', path: '/admin/office-bearers-admin', icon: Award },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
