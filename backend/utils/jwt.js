@@ -10,11 +10,12 @@ const getAccessSecret = () => {
 };
 
 const getRefreshSecret = () => {
-  const secret = process.env.JWT_REFRESH_SECRET;
-  if (!secret) {
-    throw new Error('JWT_REFRESH_SECRET environment variable is not configured.');
+  if (process.env.JWT_REFRESH_SECRET) {
+    return process.env.JWT_REFRESH_SECRET;
   }
-  return secret;
+  // If JWT_REFRESH_SECRET is not separately configured in host env, derive a distinct key from JWT_SECRET
+  const accessSecret = getAccessSecret();
+  return crypto.createHmac('sha256', accessSecret).update('tmssa-refresh-secret-v1').digest('hex');
 };
 
 const signAccessToken = (payload) => {
