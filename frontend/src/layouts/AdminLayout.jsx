@@ -3,18 +3,11 @@ import { Outlet, NavLink, useNavigate, Link, useLocation } from 'react-router-do
 import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
-  MapPin,
-  Users,
-  UserCheck,
-  Award,
   Newspaper,
   Calendar,
   Image,
-  MessageCircle,
-  Globe,
   Settings,
   LogOut,
-  Home,
   Menu,
   X
 } from 'lucide-react';
@@ -24,13 +17,6 @@ const ADMIN_LINKS = [
   { label: 'News & Updates', path: '/admin/news', icon: Newspaper },
   { label: 'Events', path: '/admin/events', icon: Calendar },
   { label: 'Gallery', path: '/admin/gallery', icon: Image },
-  { label: 'Districts', path: '/admin/districts', icon: MapPin },
-  { label: 'Members', path: '/admin/members', icon: Users },
-  { label: 'State Admins', path: '/admin/state-admins', icon: UserCheck },
-  { label: 'District Admins', path: '/admin/district-admins', icon: Users },
-  { label: 'Office Bearers', path: '/admin/office-bearers-admin', icon: Award },
-  { label: 'WhatsApp Groups', path: '/admin/whatsapp', icon: MessageCircle },
-  { label: 'Translations', path: '/admin/translations', icon: Globe },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
