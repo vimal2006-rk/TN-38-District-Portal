@@ -78,7 +78,16 @@ export default function WhatsAppGroupsPage() {
               >
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#64748B' }}>
-                    <span className="font-mono">#{d.id < 10 ? `0${d.id}` : d.id}</span>
+                    <span className="font-mono flex items-center gap-1.5">
+                      #{d.id < 10 ? `0${d.id}` : d.id}
+                      {d.whatsappLink && (
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-green-200"
+                          style={{ backgroundColor: '#16A34A' }}
+                          title={isTa ? 'WhatsApp இணைப்பு சேர்க்கப்பட்டது' : 'WhatsApp Link Integrated'}
+                        />
+                      )}
+                    </span>
                     <span
                       className="px-2 py-0.5 rounded-full font-bold text-[10px]"
                       style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
