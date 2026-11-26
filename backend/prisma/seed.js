@@ -67,21 +67,23 @@ async function main() {
   }
   console.log(`     ✔ ${roles.length} roles seeded`);
 
-  // 2. Super Admin user
+  // 2. Super Admin user (from env or default)
   console.log('  → Seeding super admin user...');
-  const passwordHash = await bcrypt.hash('Admin@123', 10);
+  const seedEmail = (process.env.ADMIN_SEED_EMAIL || 'admin@tnmssa.com').trim().toLowerCase();
+  const seedPassword = process.env.ADMIN_SEED_PASSWORD || 'TmssaAdmin@2026';
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
   await prisma.user.upsert({
-    where: { email: 'admin@tn38portal.com' },
+    where: { email: seedEmail },
     update: {},
     create: {
-      name: 'Super Admin',
-      email: 'admin@tn38portal.com',
+      name: 'TMSSA Super Admin',
+      email: seedEmail,
       passwordHash,
       roleId: 1,
       isActive: true,
     },
   });
-  console.log('     ✔ Super admin user seeded');
+  console.log(`     ✔ Super admin user seeded (${seedEmail})`);
 
   // 3. Districts
   console.log('  → Seeding districts...');

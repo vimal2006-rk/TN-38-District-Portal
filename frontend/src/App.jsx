@@ -35,6 +35,7 @@ const ManageEventsPage      = React.lazy(() => import('./pages/admin/ManageEvent
 const ManageGalleryPage     = React.lazy(() => import('./pages/admin/ManageGalleryPage'));
 const ManageWhatsAppPage    = React.lazy(() => import('./pages/admin/ManageWhatsAppPage'));
 const ManageTranslationsPage = React.lazy(() => import('./pages/admin/ManageTranslationsPage'));
+const AdminSettingsPage     = React.lazy(() => import('./pages/admin/AdminSettingsPage'));
 
 // ─── Loading Fallback ─────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="gallery"             element={<ManageGalleryPage />} />
             <Route path="whatsapp"            element={<ManageWhatsAppPage />} />
             <Route path="translations"        element={<ManageTranslationsPage />} />
+            <Route path="settings"            element={<AdminSettingsPage />} />
           </Route>
 
           {/* Fallback */}

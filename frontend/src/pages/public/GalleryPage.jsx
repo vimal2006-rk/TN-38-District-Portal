@@ -1,19 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as ImageIcon, Camera } from 'lucide-react';
-
-const GALLERY_ITEMS = [
-  { id: 1, title: 'State Assembly 2026', titleTa: 'மாநில மாநாடு 2026', category: 'Events' },
-  { id: 2, title: 'Madurai Office Opening', titleTa: 'மதுரை அலுவலக திறப்பு', category: 'Inauguration' },
-  { id: 3, title: 'Coimbatore Youth Meet', titleTa: 'கோவை இளைஞர் சந்திப்பு', category: 'Youth' },
-  { id: 4, title: 'Chennai Executive Meeting', titleTa: 'சென்னை செயற்குழு கூட்டம்', category: 'Meeting' },
-  { id: 5, title: 'Salem District Rally', titleTa: 'சேலம் பேரணி', category: 'Events' },
-  { id: 6, title: 'Tiruchirappalli Convention', titleTa: 'திருச்சி மாநாடு', category: 'Events' },
-];
+import { Image as ImageIcon, Camera, Video, X } from 'lucide-react';
+import api from '../../services/api';
 
 export default function GalleryPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('ALL');
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/gallery', { headers: { 'Cache-Control': 'no-cache' } })
+      .then((res) => {
+        if (active) setItems(res.data?.data || []);
+      })
+      .catch(() => {
+        if (active) setItems([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const categories = useMemo(() => {
+    const cats = new Set(items.map((i) => i.category || 'General'));
+    return ['ALL', ...Array.from(cats)];
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    if (activeCategory === 'ALL') return items;
+    return items.filter((i) => (i.category || 'General') === activeCategory);
+  }, [items, activeCategory]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
@@ -25,25 +49,113 @@ export default function GalleryPage() {
           {t('gallery.title', 'Photo & Media Gallery')}
         </h1>
         <p className="text-gray-500 text-sm">
-          {isTa ? 'அமைப்பின் முக்கிய நிகழ்வுகள் மற்றும் புகைப்படத் தொகுப்புகள்.' : 'Visual memories from state conventions, rallies, and district initiatives.'}
+          {isTa
+            ? 'அமைப்பின் முக்கிய நிகழ்வுகள் மற்றும் புகைப்படத் தொகுப்புகள்.'
+            : 'Visual memories from state conventions, rallies, and district initiatives.'}
         </p>
+
+        {categories.length > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+                  activeCategory === cat
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {cat === 'ALL' ? (isTa ? 'அனைத்தும்' : 'All') : cat}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-3 sm:gap-6">
-        {GALLERY_ITEMS.map((item) => (
-          <div key={item.id} className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition group">
-            <div className="h-32 xs:h-40 sm:h-52 bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-white/90">
-              <ImageIcon size={36} className="group-hover:scale-110 transition-transform duration-300 sm:w-12 sm:h-12" />
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-3 sm:gap-6">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="bg-white rounded-2xl border border-gray-100 h-56 animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 text-gray-500 text-sm">
+          {isTa ? 'தற்போது படங்கள் எதுவும் இல்லை.' : 'No published gallery media yet.'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-3 sm:gap-6">
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => setSelectedItem(item)}
+              className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer"
+            >
+              <div className="relative h-32 xs:h-40 sm:h-52 bg-gray-100 flex items-center justify-center overflow-hidden">
+                {item.mediaType === 'VIDEO' ? (
+                  <>
+                    <video src={item.mediaUrl} className="w-full h-full object-cover" />
+                    <span className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white">
+                      <Video size={14} />
+                    </span>
+                  </>
+                ) : item.mediaUrl ? (
+                  <img
+                    src={item.mediaUrl}
+                    alt={isTa ? item.titleTa || item.titleEn : item.titleEn || 'Gallery'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <ImageIcon size={36} className="text-orange-400" />
+                )}
+              </div>
+              <div className="p-3 sm:p-4">
+                <span className="text-[9px] sm:text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase">
+                  {item.category || 'General'}
+                </span>
+                <h3 className="font-bold text-gray-800 text-xs sm:text-sm mt-1 truncate">
+                  {isTa ? item.titleTa || item.titleEn || 'Media' : item.titleEn || 'Media'}
+                </h3>
+              </div>
             </div>
-            <div className="p-3 sm:p-4">
-              <span className="text-[9px] sm:text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase">
-                {item.category}
-              </span>
-              <h3 className="font-bold text-gray-800 text-xs sm:text-sm mt-1 truncate">{isTa ? item.titleTa : item.title}</h3>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {selectedItem && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-3.5 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">
+                  {isTa ? selectedItem.titleTa || selectedItem.titleEn : selectedItem.titleEn || 'Media'}
+                </h3>
+                <p className="text-xs text-gray-400">{selectedItem.category}</p>
+              </div>
+              <button onClick={() => setSelectedItem(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X size={18} />
+              </button>
             </div>
+            <div className="bg-black flex items-center justify-center max-h-[70vh]">
+              {selectedItem.mediaType === 'VIDEO' ? (
+                <video src={selectedItem.mediaUrl} controls autoPlay className="max-h-[70vh] w-full" />
+              ) : (
+                <img src={selectedItem.mediaUrl} alt={selectedItem.titleEn || 'Gallery'} className="max-h-[70vh] object-contain" />
+              )}
+            </div>
+            {selectedItem.description && (
+              <p className="p-4 text-xs sm:text-sm text-gray-600">{selectedItem.description}</p>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -54,8 +54,10 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  role     Role      @relation(fields: [roleId], references: [id])
-  district District? @relation(fields: [districtId], references: [id])
+  role          Role               @relation(fields: [roleId], references: [id])
+  district      District?          @relation(fields: [districtId], references: [id])
+  refreshTokens RefreshToken[]
+  activityLogs  AdminActivityLog[]
 }
 
 // ─────────────────────────────────────────────
@@ -83,6 +85,46 @@ model District {
   news                   News[]
   gallery                Gallery[]
   users                  User[]
+}
+
+// ─────────────────────────────────────────────
+// RefreshToken (JWT Refresh Token Rotation)
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id                  Int       @id @default(autoincrement())
+  tokenHash           String    @unique
+  userId              Int
+  expiresAt           DateTime
+  revokedAt           DateTime?
+  replacedByTokenHash String?
+  ipAddress           String?
+  userAgent           String?
+  createdAt           DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// AdminActivityLog
+// ─────────────────────────────────────────────
+
+model AdminActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  action     String
+  entityType String
+  entityId   Int?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType])
 }
 
 // ─────────────────────────────────────────────
@@ -192,8 +234,10 @@ model Event {
   descriptionEn  String?
   descriptionTa  String?
   eventDate      DateTime
+  eventTime      String?
   location       String?
   imageUrl       String?
+  status         String   @default("UPCOMING")
   isPublished    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -230,11 +274,16 @@ model Gallery {
   districtId  Int?
   titleEn     String?
   titleTa     String?
+  description String?
+  category    String    @default("General")
+  album       String?
   mediaUrl    String
+  publicId    String?
   mediaType   MediaType @default(IMAGE)
   caption     String?
   isPublished Boolean   @default(true)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   district District? @relation(fields: [districtId], references: [id])
 }

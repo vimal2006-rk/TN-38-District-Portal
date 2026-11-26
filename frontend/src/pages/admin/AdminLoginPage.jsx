@@ -1,98 +1,141 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Shield, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState('admin@tn38portal.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (searchParams.get('expired') === '1') {
+      setErrorMsg('Your session has expired. Please sign in again.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     setLoading(true);
     try {
-      await login(email, password);
-      toast.success('Login successful!');
-      navigate('/admin/dashboard');
+      await login(email.trim(), password);
+      toast.success('Signed in successfully');
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
-      toast.error('Invalid credentials or backend unavailable. Entering demo mode.');
-      // Fallback demo login
-      localStorage.setItem('tn38_token', 'demo_token');
-      localStorage.setItem('tn38_user', JSON.stringify({ name: 'Super Admin', email, role: 'SUPER_ADMIN' }));
-      window.location.href = '/admin/dashboard';
+      const msg =
+        err.response?.data?.message ||
+        (err.response?.status === 429
+          ? 'Too many login attempts. Please wait 15 minutes and try again.'
+          : 'Authentication failed. Please check your email and password.');
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#F4F7FC' }}>
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-200 p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-orange-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
-            <Shield size={28} />
+          <img
+            src="/logo.jpg"
+            alt="TMSSA Logo"
+            className="w-16 h-16 rounded-full object-cover mx-auto border-2 border-[#F07818] shadow-md"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#09246B] text-[11px] font-bold">
+            <Shield size={13} className="text-[#F07818]" />
+            <span>TMSSA SECURE ADMIN PORTAL</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Admin Login</h1>
-          <p className="text-xs text-gray-500">Tamil Nadu 38 District Portal Management Console</p>
+          <h1 className="text-2xl font-extrabold text-gray-900">Admin Sign In</h1>
+          <p className="text-xs text-gray-500">
+            Tamilnadu Mobile Sales and Service Association
+          </p>
         </div>
+
+        {errorMsg && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Email Address
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              Admin Email
             </label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="email"
                 required
+                autoComplete="email"
+                placeholder="admin@tnmssa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#123DAA] text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#123DAA] text-sm"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
-          </div>
-
-          <div className="p-3 bg-orange-50 rounded-xl text-xs text-orange-800 space-y-1">
-            <p className="font-semibold">Default Credentials:</p>
-            <p>Email: <span className="font-mono">admin@tn38portal.com</span></p>
-            <p>Password: <span className="font-mono">Admin@123</span></p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm transition shadow-md flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl text-white font-bold text-sm transition shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{ backgroundColor: '#09246B' }}
           >
-            <span>{loading ? 'Authenticating...' : 'Sign In to Dashboard'}</span>
+            <span>{loading ? 'Verifying Credentials...' : 'Sign In to Dashboard'}</span>
             <ArrowRight size={16} />
           </button>
         </form>
 
-        <div className="text-center pt-2">
-          <Link to="/" className="text-xs text-gray-400 hover:text-orange-600 transition">
-            &larr; Back to Public Portal
+        <div className="text-center pt-2 border-t border-gray-100">
+          <Link to="/" className="text-xs text-gray-500 hover:text-[#123DAA] transition font-medium">
+            &larr; Back to Public Website
           </Link>
         </div>
       </div>

@@ -1,9 +1,9 @@
-const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require('../utils/jwt');
 const { requireRole, requireSuperAdmin, requireAdmin, requireDistrictOwnership } = require('./rbac.middleware');
 
 /**
  * JWT Authentication Middleware
- * Extracts and verifies Bearer token from Authorization header.
+ * Extracts and verifies Bearer access token from Authorization header.
  * Attaches decoded user payload to req.user.
  */
 const authenticate = (req, res, next) => {
@@ -16,11 +16,11 @@ const authenticate = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key_change_in_production');
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+    return res.status(401).json({ success: false, message: 'Invalid or expired access token.' });
   }
 };
 
@@ -31,7 +31,7 @@ const optionalAuthenticate = (req, res, next) => {
   }
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key_change_in_production');
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
   } catch (err) {
     // Pass along without user if token is expired or invalid

@@ -12,6 +12,7 @@ import {
   Image,
   MessageCircle,
   Globe,
+  Settings,
   LogOut,
   Home,
   Menu,
@@ -20,16 +21,17 @@ import {
 
 const ADMIN_LINKS = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'News & Updates', path: '/admin/news', icon: Newspaper },
+  { label: 'Events', path: '/admin/events', icon: Calendar },
+  { label: 'Gallery', path: '/admin/gallery', icon: Image },
   { label: 'Districts', path: '/admin/districts', icon: MapPin },
   { label: 'Members', path: '/admin/members', icon: Users },
   { label: 'State Admins', path: '/admin/state-admins', icon: UserCheck },
   { label: 'District Admins', path: '/admin/district-admins', icon: Users },
   { label: 'Office Bearers', path: '/admin/office-bearers-admin', icon: Award },
-  { label: 'News & Updates', path: '/admin/news', icon: Newspaper },
-  { label: 'Events', path: '/admin/events', icon: Calendar },
-  { label: 'Gallery', path: '/admin/gallery', icon: Image },
   { label: 'WhatsApp Groups', path: '/admin/whatsapp', icon: MessageCircle },
   { label: 'Translations', path: '/admin/translations', icon: Globe },
+  { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout() {
@@ -59,8 +61,8 @@ export default function AdminLayout() {
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           <div className="flex flex-col leading-tight">
-            <span className="text-white text-sm font-bold">TN 38 Portal</span>
-            <span style={{ color: '#F07818' }} className="text-[10px]">Admin Console</span>
+            <span className="text-white text-sm font-bold">TMSSA Admin</span>
+            <span style={{ color: '#F07818' }} className="text-[10px]">Management Console</span>
           </div>
         </Link>
         <button
@@ -113,7 +115,7 @@ export default function AdminLayout() {
       <div className="p-4 border-t border-blue-900/60 flex items-center justify-between bg-[#071d57]">
         <div className="text-xs text-blue-300 truncate pr-2">
           <p className="font-semibold text-white truncate">{user?.name || 'Administrator'}</p>
-          <p className="truncate text-[11px] text-blue-400">{user?.email || 'admin@tn38portal.com'}</p>
+          <p className="truncate text-[11px] text-blue-400">{user?.email || 'admin@tnmssa.com'}</p>
         </div>
         <button
           onClick={handleLogout}
