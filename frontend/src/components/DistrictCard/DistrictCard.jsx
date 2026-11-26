@@ -63,6 +63,7 @@ export default function DistrictCard({ district }) {
           <a
             href={
               district.whatsappGroup?.inviteLink ||
+              district.whatsappLink ||
               `https://chat.whatsapp.com/invite-${district.slug}`
             }
             target="_blank"

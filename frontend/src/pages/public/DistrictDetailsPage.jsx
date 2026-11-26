@@ -35,7 +35,7 @@ export default function DistrictDetailsPage() {
           ...found,
           officeAddress: `${found.nameEn} District Office, Tamil Nadu`,
           contactNumber: '+91 94440 00000',
-          whatsappGroup: { inviteLink: `https://chat.whatsapp.com/invite-${found.slug}` },
+          whatsappGroup: { inviteLink: found.whatsappLink || `https://chat.whatsapp.com/invite-${found.slug}` },
           administrators: [
             { nameEn: 'District President', nameTa: 'மாவட்ட தலைவர்', role: 'President', phone: '+91 98400 11111' },
             { nameEn: 'District Secretary', nameTa: 'மாவட்ட செயலாளர்', role: 'Secretary', phone: '+91 98400 22222' },

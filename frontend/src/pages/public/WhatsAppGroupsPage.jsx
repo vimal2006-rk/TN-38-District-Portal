@@ -68,7 +68,7 @@ export default function WhatsAppGroupsPage() {
         <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-4 sm:gap-5">
           {filtered.map((d) => {
             const name = isTa ? d.nameTa : d.nameEn;
-            const link = `https://chat.whatsapp.com/invite-${d.slug}`;
+            const link = d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`;
 
             return (
               <div

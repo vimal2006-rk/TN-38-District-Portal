@@ -7,7 +7,7 @@ export default function ManageWhatsAppPage() {
   const [districts, setDistricts] = useState(
     TN_DISTRICTS.map(d => ({
       ...d,
-      inviteLink: `https://chat.whatsapp.com/invite-${d.slug}`
+      inviteLink: d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`
     }))
   );
   const [editing, setEditing] = useState(null);
