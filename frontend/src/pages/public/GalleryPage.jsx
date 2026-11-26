@@ -2,24 +2,29 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon, Camera, Video, X } from 'lucide-react';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 
 export default function GalleryPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedData('gallery');
+  const [items, setItems] = useState(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached);
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     let active = true;
     api
-      .get('/gallery', { headers: { 'Cache-Control': 'no-cache' } })
+      .get('/gallery')
       .then((res) => {
-        if (active) setItems(res.data?.data || []);
+        if (!active) return;
+        const data = res.data?.data || [];
+        setItems(data);
+        setCachedData('gallery', data);
       })
       .catch(() => {
-        if (active) setItems([]);
+        if (active && !initialCached) setItems([]);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -103,6 +108,8 @@ export default function GalleryPage() {
                   <img
                     src={item.mediaUrl}
                     alt={isTa ? item.titleTa || item.titleEn : item.titleEn || 'Gallery'}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (

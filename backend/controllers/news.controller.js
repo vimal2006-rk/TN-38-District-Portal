@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllNews = async (req, res, next) => {
   try {
@@ -32,6 +33,15 @@ const getAllNews = async (req, res, next) => {
     const pageNum = Math.max(1, parseInt(page || '1', 10));
     const pageSize = Math.min(50, Math.max(1, parseInt(limit || '12', 10)));
 
+    const cacheKey = !isAdmin && !search && !usePagination ? `news:public:${districtId || 'all'}` : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const [news, total] = await Promise.all([
       prisma.news.findMany({
         where,
@@ -42,7 +52,7 @@ const getAllNews = async (req, res, next) => {
       prisma.news.count({ where }),
     ]);
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       data: news,
       pagination: {
@@ -51,7 +61,14 @@ const getAllNews = async (req, res, next) => {
         limit: pageSize,
         totalPages: Math.ceil(total / pageSize) || 1,
       },
-    });
+    };
+
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -103,6 +120,7 @@ const createNews = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('news:');
 
     await logActivity({
       userId: req.user?.id,
@@ -155,6 +173,7 @@ const updateNews = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('news:');
 
     await logActivity({
       userId: req.user?.id,
@@ -180,6 +199,7 @@ const deleteNews = async (req, res, next) => {
     }
 
     await prisma.news.delete({ where: { id: newsId } });
+    invalidateCache('news:');
 
     await logActivity({
       userId: req.user?.id,

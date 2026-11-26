@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import { Award, Plus, Search, Edit2, Trash2, Upload, X, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -19,6 +20,7 @@ export default function ManageOfficeBearersPage() {
   const [bearers, setBearers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [districtFilter, setDistrictFilter] = useState('all');
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,7 +35,7 @@ export default function ManageOfficeBearersPage() {
     setLoading(true);
     try {
       const params = {};
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (districtFilter !== 'all') params.districtId = districtFilter;
       const res = await api.get('/admin/administration', { params });
       setBearers(res.data?.data || []);
@@ -42,7 +44,7 @@ export default function ManageOfficeBearersPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, districtFilter]);
+  }, [debouncedSearch, districtFilter]);
 
   useEffect(() => {
     fetchBearers();

@@ -3,22 +3,27 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Newspaper, Calendar, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 
 export default function NewsPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [newsList, setNewsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedData('news');
+  const [newsList, setNewsList] = useState(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached);
 
   useEffect(() => {
     let active = true;
     api
-      .get('/news', { headers: { 'Cache-Control': 'no-cache' } })
+      .get('/news')
       .then((res) => {
-        if (active) setNewsList(res.data?.data || []);
+        if (!active) return;
+        const data = res.data?.data || [];
+        setNewsList(data);
+        setCachedData('news', data);
       })
       .catch(() => {
-        if (active) setNewsList([]);
+        if (active && !initialCached) setNewsList([]);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -75,6 +80,8 @@ export default function NewsPage() {
                   <img
                     src={item.imageUrl}
                     alt={isTa ? item.titleTa : item.titleEn}
+                    loading="lazy"
+                    decoding="async"
                     className="h-44 w-full object-cover"
                   />
                 ) : (

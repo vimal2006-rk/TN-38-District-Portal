@@ -3,23 +3,28 @@ import { useTranslation } from 'react-i18next';
 import { Phone } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 
 export default function OfficeBearersPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
   const [selectedDistrict, setSelectedDistrict] = useState('all');
-  const [bearers, setBearers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedData('bearers');
+  const [bearers, setBearers] = useState(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached);
 
   useEffect(() => {
     let active = true;
     api
-      .get('/office-bearers', { headers: { 'Cache-Control': 'no-cache' } })
+      .get('/office-bearers')
       .then((res) => {
-        if (active) setBearers(res.data?.data || []);
+        if (!active) return;
+        const data = res.data?.data || [];
+        setBearers(data);
+        setCachedData('bearers', data);
       })
       .catch(() => {
-        if (active) setBearers([]);
+        if (active && !initialCached) setBearers([]);
       })
       .finally(() => {
         if (active) setLoading(false);

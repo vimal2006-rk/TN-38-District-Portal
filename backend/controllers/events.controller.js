@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllEvents = async (req, res, next) => {
   try {
@@ -35,6 +36,15 @@ const getAllEvents = async (req, res, next) => {
     const pageNum = Math.max(1, parseInt(page || '1', 10));
     const pageSize = Math.min(50, Math.max(1, parseInt(limit || '12', 10)));
 
+    const cacheKey = !isAdmin && !search && !status && !usePagination ? `events:public:${districtId || 'all'}` : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
@@ -45,7 +55,7 @@ const getAllEvents = async (req, res, next) => {
       prisma.event.count({ where }),
     ]);
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       data: events,
       pagination: {
@@ -54,7 +64,14 @@ const getAllEvents = async (req, res, next) => {
         limit: pageSize,
         totalPages: Math.ceil(total / pageSize) || 1,
       },
-    });
+    };
+
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -136,6 +153,7 @@ const createEvent = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('events:');
 
     await logActivity({
       userId: req.user?.id,
@@ -192,6 +210,7 @@ const updateEvent = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('events:');
 
     await logActivity({
       userId: req.user?.id,
@@ -222,6 +241,7 @@ const togglePublishEvent = async (req, res, next) => {
       data: { isPublished },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('events:');
 
     await logActivity({
       userId: req.user?.id,
@@ -247,6 +267,7 @@ const deleteEvent = async (req, res, next) => {
     }
 
     await prisma.event.delete({ where: { id: eventId } });
+    invalidateCache('events:');
 
     await logActivity({
       userId: req.user?.id,

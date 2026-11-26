@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
+import { clearCachedData } from '../../utils/clientCache';
 import {
   Newspaper,
   Plus,
@@ -30,6 +32,7 @@ export default function ManageNewsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
@@ -50,7 +53,7 @@ export default function ManageNewsPage() {
     setLoading(true);
     try {
       const params = { page, limit: 8 };
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (statusFilter !== 'all') params.status = statusFilter;
       const res = await api.get('/admin/news', { params });
       setItems(res.data?.data || []);
@@ -60,7 +63,7 @@ export default function ManageNewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
     fetchNews();

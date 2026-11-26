@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 const cloudinary = require('../config/cloudinary');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl, isCloudinaryConfigured } = require('../middleware/upload.middleware');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllGallery = async (req, res, next) => {
   try {
@@ -38,6 +39,17 @@ const getAllGallery = async (req, res, next) => {
     const pageNum = Math.max(1, parseInt(page || '1', 10));
     const pageSize = Math.min(50, Math.max(1, parseInt(limit || '16', 10)));
 
+    const cacheKey = !isAdmin && !search && !category && !mediaType && !usePagination
+      ? `gallery:public:${districtId || 'all'}`
+      : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const [gallery, total] = await Promise.all([
       prisma.gallery.findMany({
         where,
@@ -48,7 +60,7 @@ const getAllGallery = async (req, res, next) => {
       prisma.gallery.count({ where }),
     ]);
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       data: gallery,
       pagination: {
@@ -57,7 +69,14 @@ const getAllGallery = async (req, res, next) => {
         limit: pageSize,
         totalPages: Math.ceil(total / pageSize) || 1,
       },
-    });
+    };
+
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -136,6 +155,7 @@ const uploadMedia = async (req, res, next) => {
       details: `Uploaded ${createdItems.length} gallery item(s) (${createdItems[0]?.category || 'General'})`,
       req,
     });
+    invalidateCache('gallery:');
 
     return res.status(201).json({
       success: true,
@@ -171,6 +191,7 @@ const updateMedia = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('gallery:');
 
     await logActivity({
       userId: req.user?.id,
@@ -237,6 +258,7 @@ const deleteMedia = async (req, res, next) => {
     }
 
     await prisma.gallery.delete({ where: { id: mediaId } });
+    invalidateCache('gallery:');
 
     await logActivity({
       userId: req.user?.id,

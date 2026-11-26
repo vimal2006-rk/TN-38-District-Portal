@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getOfficBearersByDistrict = async (req, res, next) => {
   try {
@@ -32,12 +33,26 @@ const getAllOfficBearers = async (req, res, next) => {
       ];
     }
 
+    const cacheKey = !search ? `admin:bearers:${districtId || 'all'}` : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const bearers = await prisma.officBearer.findMany({
       where,
       include: { district: { select: { id: true, nameEn: true, nameTa: true, slug: true } } },
       orderBy: [{ district: { nameEn: 'asc' } }, { sortOrder: 'asc' }, { id: 'desc' }],
     });
-    return res.status(200).json({ success: true, data: bearers });
+    const payload = { success: true, data: bearers };
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -81,6 +96,7 @@ const createOfficBearer = async (req, res, next) => {
       },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('admin:bearers:');
 
     await logActivity({
       userId: req.user?.id,
@@ -143,6 +159,7 @@ const deleteOfficBearer = async (req, res, next) => {
     }
 
     await prisma.officBearer.delete({ where: { id: bearerId } });
+    invalidateCache('admin:bearers:');
 
     await logActivity({
       userId: req.user?.id,

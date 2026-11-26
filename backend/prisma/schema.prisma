@@ -164,6 +164,8 @@ model DistrictAdministrator {
   updatedAt     DateTime @updatedAt
 
   district District @relation(fields: [districtId], references: [id])
+
+  @@index([districtId, isActive])
 }
 
 // ─────────────────────────────────────────────
@@ -185,6 +187,8 @@ model OfficBearer {
   updatedAt  DateTime @updatedAt
 
   district District @relation(fields: [districtId], references: [id])
+
+  @@index([districtId, isActive])
 }
 
 // ─────────────────────────────────────────────
@@ -205,6 +209,8 @@ model Member {
   updatedAt          DateTime     @updatedAt
 
   district District @relation(fields: [districtId], references: [id])
+
+  @@index([districtId, status])
 }
 
 // ─────────────────────────────────────────────
@@ -220,6 +226,8 @@ model WhatsappGroup {
   updatedAt  DateTime @updatedAt
 
   district District @relation(fields: [districtId], references: [id])
+
+  @@index([districtId, isActive])
 }
 
 // ─────────────────────────────────────────────
@@ -243,6 +251,8 @@ model Event {
   updatedAt      DateTime @updatedAt
 
   district District? @relation(fields: [districtId], references: [id])
+
+  @@index([isPublished, eventDate])
 }
 
 // ─────────────────────────────────────────────
@@ -263,6 +273,8 @@ model News {
   updatedAt   DateTime  @updatedAt
 
   district District? @relation(fields: [districtId], references: [id])
+
+  @@index([isPublished, publishedAt])
 }
 
 // ─────────────────────────────────────────────
@@ -286,6 +298,8 @@ model Gallery {
   updatedAt   DateTime  @updatedAt
 
   district District? @relation(fields: [districtId], references: [id])
+
+  @@index([isPublished, createdAt])
 }
 
 // ─────────────────────────────────────────────

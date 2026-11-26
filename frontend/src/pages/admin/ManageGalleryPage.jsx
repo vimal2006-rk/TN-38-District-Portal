@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import {
   Camera,
   Plus,
@@ -23,6 +24,7 @@ export default function ManageGalleryPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
@@ -52,7 +54,7 @@ export default function ManageGalleryPage() {
     setLoading(true);
     try {
       const params = { page, limit: 12 };
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (typeFilter !== 'ALL') params.mediaType = typeFilter;
       const res = await api.get('/admin/gallery', { params });
       setItems(res.data?.data || []);
@@ -62,7 +64,7 @@ export default function ManageGalleryPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, typeFilter]);
+  }, [page, debouncedSearch, typeFilter]);
 
   useEffect(() => {
     fetchGallery();

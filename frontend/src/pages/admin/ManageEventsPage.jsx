@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
 import {
   Calendar,
   Plus,
@@ -34,6 +35,7 @@ export default function ManageEventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
@@ -50,7 +52,7 @@ export default function ManageEventsPage() {
     setLoading(true);
     try {
       const params = { page, limit: 8 };
-      if (search.trim()) params.search = search.trim();
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
       if (statusFilter !== 'all') params.status = statusFilter;
       const res = await api.get('/admin/events', { params });
       setEvents(res.data?.data || []);
@@ -60,7 +62,7 @@ export default function ManageEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, debouncedSearch, statusFilter]);
 
   useEffect(() => {
     fetchEvents();

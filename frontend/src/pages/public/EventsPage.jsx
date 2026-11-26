@@ -3,23 +3,28 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 
 export default function EventsPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCached = getCachedData('events');
+  const [events, setEvents] = useState(initialCached || []);
+  const [loading, setLoading] = useState(!initialCached);
   const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
     let active = true;
     api
-      .get('/events', { headers: { 'Cache-Control': 'no-cache' } })
+      .get('/events')
       .then((res) => {
-        if (active) setEvents(res.data?.data || []);
+        if (!active) return;
+        const data = res.data?.data || [];
+        setEvents(data);
+        setCachedData('events', data);
       })
       .catch(() => {
-        if (active) setEvents([]);
+        if (active && !initialCached) setEvents([]);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -91,6 +96,8 @@ export default function EventsPage() {
                 <img
                   src={event.imageUrl}
                   alt={isTa ? event.titleTa : event.titleEn}
+                  loading="lazy"
+                  decoding="async"
                   className="h-44 w-full object-cover"
                 />
               )}
