@@ -25,7 +25,7 @@ export default function ContactPage() {
           </div>
           <h3 className="font-bold text-gray-900 text-base">{t('contact.address', 'Headquarters')}</h3>
           <p className="text-xs text-gray-500 leading-relaxed">
-            State Central Office, Anna Salai, Chennai, Tamil Nadu – 600002
+            234 Meenakshi Bazar, Scoot Road,<br />Madurai – 625001, Tamil Nadu
           </p>
         </div>
 
@@ -34,11 +34,14 @@ export default function ContactPage() {
             <Phone size={22} />
           </div>
           <h3 className="font-bold text-gray-900 text-base">{t('contact.phone', 'Phone Numbers')}</h3>
-          <p className="text-xs text-gray-500 leading-relaxed">
+          <div className="text-xs text-gray-500 leading-relaxed flex flex-col gap-1">
+            <a href="tel:+919363773668" className="hover:text-blue-600 transition-colors font-semibold">
+              +91 93637 73668
+            </a>
             <a href="tel:+919944773668" className="hover:text-blue-600 transition-colors font-semibold">
               +91 99447 73668
             </a>
-          </p>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3 text-center">
@@ -46,9 +49,14 @@ export default function ContactPage() {
             <Mail size={22} />
           </div>
           <h3 className="font-bold text-gray-900 text-base">{t('contact.email', 'Email')}</h3>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            contact@tn38portal.com<br />support@tn38portal.com
-          </p>
+          <div className="text-xs text-gray-500 leading-relaxed flex flex-col gap-1">
+            <a href="mailto:Sariff1980007@gmail.com" className="hover:text-blue-600 transition-colors font-semibold break-all">
+              Sariff1980007@gmail.com
+            </a>
+            <a href="mailto:Tnmssassociation@gmail.com" className="hover:text-blue-600 transition-colors font-semibold break-all">
+              Tnmssassociation@gmail.com
+            </a>
+          </div>
         </div>
       </div>
     </div>
