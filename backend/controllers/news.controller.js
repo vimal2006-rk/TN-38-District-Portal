@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
+const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
 
 const getAllNews = async (req, res, next) => {
   try {
@@ -79,7 +80,7 @@ const getNewsById = async (req, res, next) => {
 const createNews = async (req, res, next) => {
   try {
     const { districtId, titleEn, titleTa, contentEn, contentTa, isPublished, publishedAt } = req.body;
-    const imageUrl = req.file ? req.file.path : req.body.imageUrl || null;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : req.body.imageUrl || null;
     const publishedFlag = isPublished === true || isPublished === 'true';
 
     if (!titleEn?.trim() && !titleTa?.trim()) {
@@ -128,7 +129,7 @@ const updateNews = async (req, res, next) => {
     }
 
     const { districtId, titleEn, titleTa, contentEn, contentTa, isPublished, publishedAt } = req.body;
-    const imageUrl = req.file ? req.file.path : req.body.imageUrl;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : req.body.imageUrl;
 
     const data = {};
     if (titleEn !== undefined) data.titleEn = titleEn.trim();

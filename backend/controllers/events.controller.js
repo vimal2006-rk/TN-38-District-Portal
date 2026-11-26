@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
+const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
 
 const getAllEvents = async (req, res, next) => {
   try {
@@ -107,7 +108,7 @@ const createEvent = async (req, res, next) => {
       status,
       isPublished,
     } = req.body;
-    const imageUrl = req.file ? req.file.path : req.body.imageUrl || null;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : req.body.imageUrl || null;
 
     if (!titleEn?.trim() && !titleTa?.trim()) {
       return res.status(400).json({ success: false, message: 'Event title is required.' });
@@ -171,7 +172,7 @@ const updateEvent = async (req, res, next) => {
       status,
       isPublished,
     } = req.body;
-    const imageUrl = req.file ? req.file.path : req.body.imageUrl;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : req.body.imageUrl;
 
     const data = {};
     if (titleEn !== undefined) data.titleEn = titleEn.trim();

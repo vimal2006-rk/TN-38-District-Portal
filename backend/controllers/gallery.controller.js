@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const cloudinary = require('../config/cloudinary');
 const { logActivity } = require('../services/activityLog.service');
+const { resolveUploadedFileUrl, isCloudinaryConfigured } = require('../middleware/upload.middleware');
 
 const getAllGallery = async (req, res, next) => {
   try {
@@ -89,6 +90,7 @@ const uploadMedia = async (req, res, next) => {
     if (files.length > 0) {
       for (const file of files) {
         const detectedType = file.mimetype?.startsWith('video/') ? 'VIDEO' : 'IMAGE';
+        const resolvedUrl = resolveUploadedFileUrl(req, file);
         const item = await prisma.gallery.create({
           data: {
             districtId: districtId ? parseInt(districtId, 10) : null,
@@ -97,8 +99,8 @@ const uploadMedia = async (req, res, next) => {
             description: description?.trim() || null,
             category: category?.trim() || 'General',
             album: album?.trim() || null,
-            mediaUrl: file.path,
-            publicId: file.filename || null,
+            mediaUrl: resolvedUrl,
+            publicId: isCloudinaryConfigured() ? file.filename || null : null,
             mediaType: mediaType || detectedType,
             caption: caption?.trim() || null,
             isPublished: publishedFlag,

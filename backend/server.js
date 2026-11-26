@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -24,13 +25,17 @@ const translationRoutes = require('./routes/translation.routes');
 const errorHandler = require('./middleware/errorHandler.middleware');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Performance & Compression middleware
 app.use(compression());
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true, maxAge: 86400 }));
+
+// Serve uploaded media when local storage fallback is used
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Body parsers
 app.use(express.json());
