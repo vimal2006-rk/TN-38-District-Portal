@@ -160,36 +160,24 @@ export default function Navbar() {
 
       {/* ── Mobile Drawer (Below 1024px) ─────────────────────────── */}
       {menuOpen && (
-        <div className="laptop:hidden fixed inset-0 top-[60px] xs:top-[64px] sm:top-[70px] bg-black/60 backdrop-blur-sm z-50">
+        <div
+          onClick={() => setMenuOpen(false)}
+          className="laptop:hidden fixed inset-0 top-[60px] xs:top-[64px] sm:top-[70px] bg-black/60 backdrop-blur-sm z-50"
+        >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{ backgroundColor: '#09246B' }}
-            className="border-t-2 border-[#F07818] shadow-2xl px-4 py-5 max-h-[calc(100vh-4.5rem)] overflow-y-auto"
+            className="border-t-2 border-[#F07818] shadow-2xl px-4 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto"
           >
-            {/* Logo in mobile drawer */}
-            <div className="flex items-center gap-3 px-3 pb-4 mb-3 border-b border-blue-700/60">
-              <img
-                src="/logo.jpg"
-                alt="TMSSA Logo"
-                className="h-11 w-11 rounded-full object-cover border-2 border-[#F07818]"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-              <div>
-                <p className="text-white font-bold text-sm leading-tight">
-                  தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
-                </p>
-                <p className="text-[#F07818] text-xs font-semibold mt-0.5">
-                  Tamilnadu Mobile Sales and Service Association
-                </p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#16A34A] text-white font-bold">
-                    Reg: 23/2025
-                  </span>
-                  <a href="tel:+919944773668" className="text-xs text-blue-200 hover:text-white flex items-center gap-1">
-                    <Phone size={12} className="text-[#F07818]" />
-                    <span>+91 99447 73668</span>
-                  </a>
-                </div>
-              </div>
+            {/* Compact Reg & Helpline Bar (no duplicate logo/name) */}
+            <div className="flex items-center justify-between gap-2 px-3 pb-3 mb-3 border-b border-blue-700/60">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#16A34A] text-white font-bold">
+                Reg: 23/2025
+              </span>
+              <a href="tel:+919944773668" className="text-xs text-blue-100 hover:text-white flex items-center gap-1.5 font-semibold">
+                <Phone size={13} className="text-[#F07818]" />
+                <span>+91 99447 73668</span>
+              </a>
             </div>
 
             <p className="text-[11px] font-bold text-blue-300 uppercase tracking-widest px-3 mb-2">
