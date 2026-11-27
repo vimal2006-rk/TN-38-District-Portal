@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { evictCachedMedia } = require('./media.controller');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getOfficBearersByDistrict = async (req, res, next) => {
@@ -29,6 +30,7 @@ const getOfficBearersByDistrict = async (req, res, next) => {
 const getAllOfficBearers = async (req, res, next) => {
   try {
     const { districtId, search } = req.query;
+    const isAdmin = Boolean(req.user && ['SUPER_ADMIN', 'DISTRICT_ADMIN'].includes(req.user.role));
     const where = { isActive: true };
     if (districtId && districtId !== 'all') where.districtId = parseInt(districtId, 10);
 
@@ -43,7 +45,7 @@ const getAllOfficBearers = async (req, res, next) => {
       ];
     }
 
-    const cacheKey = !search ? `admin:bearers:${districtId || 'all'}` : null;
+    const cacheKey = !isAdmin && !search ? `admin:bearers:${districtId || 'all'}` : null;
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
@@ -61,6 +63,8 @@ const getAllOfficBearers = async (req, res, next) => {
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
       res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
     return res.status(200).json(payload);
   } catch (err) {
@@ -167,6 +171,14 @@ const deleteOfficBearer = async (req, res, next) => {
     const existing = await prisma.officBearer.findUnique({ where: { id: bearerId } });
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Administration member not found' });
+    }
+
+    if (existing.photoUrl && existing.photoUrl.includes('/media/')) {
+      const mediaId = existing.photoUrl.split('/media/').pop().split('?')[0];
+      if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
+        evictCachedMedia(mediaId);
+        await prisma.uploadedMedia.deleteMany({ where: { id: mediaId } }).catch(() => {});
+      }
     }
 
     await prisma.officBearer.delete({ where: { id: bearerId } });
