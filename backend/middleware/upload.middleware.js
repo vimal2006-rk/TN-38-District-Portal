@@ -1,12 +1,22 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
+const { isGcsConfigured, uploadBufferToGcs, deleteGcsObjectByUrl } = require('../config/gcs');
 const prisma = require('../config/database');
-const { cacheMediaItem } = require('../controllers/media.controller');
+const { cacheMediaItem, evictCachedMedia } = require('../controllers/media.controller');
+
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch {
+  sharp = null;
+}
 
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const CONVERTIBLE_WEBP_MIME = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 const ALLOWED_VIDEO_MIME = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
 const MAX_DB_MEDIA_BYTES = 15 * 1024 * 1024; // 15MB safety cap when falling back to PostgreSQL storage
 
@@ -28,8 +38,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Persistent memoryStorage -> saved to Supabase PostgreSQL when Cloudinary is not configured
-// (Avoids Render's ephemeral disk wiping images on restart/sleep/redeploy)
+// Persistent memoryStorage -> converted to WebP and stored in GCS or Supabase PostgreSQL
 const memoryStorage = multer.memoryStorage();
 
 const cloudinaryImageStorage = new CloudinaryStorage({
@@ -72,18 +81,18 @@ const mediaFileFilter = (req, file, cb) => {
   }
 };
 
-const useCloud = isCloudinaryConfigured();
+const useCloudinaryFallback = !isGcsConfigured() && isCloudinaryConfigured();
 
 const uploadImage = multer({
-  storage: useCloud ? cloudinaryImageStorage : memoryStorage,
+  storage: useCloudinaryFallback ? cloudinaryImageStorage : memoryStorage,
   fileFilter: imageFileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 const uploadMedia = multer({
-  storage: useCloud ? cloudinaryMediaStorage : memoryStorage,
+  storage: useCloudinaryFallback ? cloudinaryMediaStorage : memoryStorage,
   fileFilter: mediaFileFilter,
-  limits: { fileSize: useCloud ? 50 * 1024 * 1024 : MAX_DB_MEDIA_BYTES, files: 10 },
+  limits: { fileSize: isGcsConfigured() || isCloudinaryConfigured() ? 50 * 1024 * 1024 : MAX_DB_MEDIA_BYTES, files: 10 },
 });
 
 const strictJpgPngFilter = (req, file, cb) => {
@@ -97,7 +106,7 @@ const strictJpgPngFilter = (req, file, cb) => {
 };
 
 const uploadMembershipImage = multer({
-  storage: useCloud ? cloudinaryImageStorage : memoryStorage,
+  storage: useCloudinaryFallback ? cloudinaryImageStorage : memoryStorage,
   fileFilter: strictJpgPngFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });
@@ -115,8 +124,108 @@ const collectRequestFiles = (req) => {
   return files;
 };
 
-const persistMemoryFileToDb = async (file) => {
-  if (!file || !file.buffer || file.savedMediaId) return;
+const resolveFolderAndMaxDim = (req, file) => {
+  const route = `${req.baseUrl || ''}${req.path || ''}`.toLowerCase();
+  if (route.includes('administration') || route.includes('office-bearers')) {
+    return { folder: 'office-bearers', maxDim: 800, quality: 85 };
+  }
+  if (route.includes('district-admins')) {
+    return { folder: 'district-admins', maxDim: 800, quality: 85 };
+  }
+  if (route.includes('state-admins')) {
+    return { folder: 'state-admins', maxDim: 800, quality: 85 };
+  }
+  if (route.includes('news')) {
+    return { folder: 'news', maxDim: 1400, quality: 85 };
+  }
+  if (route.includes('events')) {
+    return { folder: 'events', maxDim: 1400, quality: 85 };
+  }
+  if (route.includes('gallery')) {
+    const isVideo = file.mimetype?.startsWith('video/');
+    return {
+      folder: isVideo ? 'gallery/videos' : 'gallery/images',
+      maxDim: 1600,
+      quality: 85,
+    };
+  }
+  if (route.includes('membership/settings')) {
+    return { folder: 'membership/qr', maxDim: 600, quality: 90 };
+  }
+  if (route.includes('membership')) {
+    return { folder: 'membership/applications', maxDim: 1000, quality: 85 };
+  }
+  return { folder: 'images', maxDim: 1400, quality: 85 };
+};
+
+const optimizeImageBufferToWebp = async (file, { maxDim = 1400, quality = 85 } = {}) => {
+  if (!sharp || !file?.buffer || !CONVERTIBLE_WEBP_MIME.has(file.mimetype)) {
+    return file;
+  }
+
+  try {
+    const pipeline = sharp(file.buffer, { failOn: 'none' }).rotate();
+    const meta = await pipeline.metadata();
+    const withinBounds =
+      (!meta.width || meta.width <= maxDim) && (!meta.height || meta.height <= maxDim);
+
+    // Avoid re-compressing already properly sized WebP images uploaded by admin UI
+    if (file.mimetype === 'image/webp' && withinBounds) {
+      return file;
+    }
+
+    const webpBuffer = await sharp(file.buffer, { failOn: 'none' })
+      .rotate()
+      .resize({
+        width: maxDim,
+        height: maxDim,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality })
+      .toBuffer();
+
+    const baseName = (file.originalname || 'image').replace(/\.[^/.]+$/, '') || 'image';
+    file.buffer = webpBuffer;
+    file.size = webpBuffer.length;
+    file.mimetype = 'image/webp';
+    file.originalname = `${baseName}.webp`;
+  } catch (err) {
+    console.warn('Server WebP optimization skipped:', err.message);
+  }
+  return file;
+};
+
+const sanitizeObjectName = (filename, fallbackExt = '') => {
+  const parsed = path.parse(filename || 'upload');
+  const safeBase = (parsed.name || 'upload')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'upload';
+  const ext = parsed.ext || fallbackExt;
+  return `${Date.now()}-${crypto.randomUUID()}-${safeBase}${ext}`;
+};
+
+const persistMemoryFile = async (req, file, { convertToWebp = true } = {}) => {
+  if (!file || !file.buffer || file.savedMediaId || file.gcsUrl) return;
+
+  const { folder, maxDim, quality } = resolveFolderAndMaxDim(req, file);
+  if (convertToWebp) {
+    await optimizeImageBufferToWebp(file, { maxDim, quality });
+  }
+
+  if (isGcsConfigured()) {
+    const ext = file.mimetype === 'image/webp' ? '.webp' : '';
+    const objectPath = `${folder}/${sanitizeObjectName(file.originalname, ext)}`;
+    file.gcsUrl = await uploadBufferToGcs({
+      buffer: file.buffer,
+      objectPath,
+      mimeType: file.mimetype || 'application/octet-stream',
+    });
+    file.buffer = null;
+    return;
+  }
+
   const record = await prisma.uploadedMedia.create({
     data: {
       filename: (file.originalname || 'upload').slice(0, 200),
@@ -135,17 +244,17 @@ const persistMemoryFileToDb = async (file) => {
 };
 
 /**
- * Wraps multer middleware so non-Cloudinary uploads persist directly to PostgreSQL
- * instead of Render's ephemeral disk, keeping downstream controller calls unchanged.
+ * Wraps multer middleware to automatically optimize images to WebP and store them in
+ * Google Cloud Storage (when configured) or persistent PostgreSQL media storage.
  */
-const withPersistentFallback = (multerMiddleware) => (req, res, next) => {
+const withPersistentUpload = (multerMiddleware, { convertToWebp = true } = {}) => (req, res, next) => {
   multerMiddleware(req, res, async (err) => {
     if (err) return next(err);
-    if (useCloud) return next();
+    if (useCloudinaryFallback) return next();
     try {
       const files = collectRequestFiles(req);
       if (files.length > 0) {
-        await Promise.all(files.map(persistMemoryFileToDb));
+        await Promise.all(files.map((file) => persistMemoryFile(req, file, { convertToWebp })));
       }
       return next();
     } catch (persistErr) {
@@ -154,19 +263,21 @@ const withPersistentFallback = (multerMiddleware) => (req, res, next) => {
   });
 };
 
-const uploadMembershipFiles = withPersistentFallback(
+const uploadMembershipFiles = withPersistentUpload(
   uploadMembershipImage.fields([
     { name: 'photo', maxCount: 1 },
     { name: 'signature', maxCount: 1 },
     { name: 'paymentScreenshot', maxCount: 1 },
-  ])
+  ]),
+  { convertToWebp: false } // PDFKit only supports JPEG & PNG for membership PDFs
 );
 
 /**
- * Helper to resolve uploaded file URL (Cloudinary HTTPS URL or persistent /api/media/:id URL)
+ * Resolves uploaded file URL (GCS CDN URL, Cloudinary URL, or persistent /api/media/:id URL).
  */
 const resolveUploadedFileUrl = (req, file) => {
   if (!file) return null;
+  if (file.gcsUrl) return file.gcsUrl;
   if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
     return file.path;
   }
@@ -178,12 +289,30 @@ const resolveUploadedFileUrl = (req, file) => {
   return `${proto}://${host}/uploads/${file.filename}`;
 };
 
+/**
+ * Best-effort cleanup of deleted/replaced files stored in Google Cloud Storage or PostgreSQL.
+ */
+const deleteStoredMediaByUrl = async (url) => {
+  if (!url || typeof url !== 'string') return;
+  await deleteGcsObjectByUrl(url);
+
+  if (url.includes('/media/')) {
+    const mediaId = url.split('/media/').pop().split('?')[0];
+    if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
+      evictCachedMedia(mediaId);
+      await prisma.uploadedMedia.deleteMany({ where: { id: mediaId } }).catch(() => {});
+    }
+  }
+};
+
 module.exports = {
-  uploadSingle: withPersistentFallback(uploadImage.single('image')),
-  uploadMultiple: withPersistentFallback(uploadImage.array('images', 10)),
-  uploadGallerySingle: withPersistentFallback(uploadMedia.single('media')),
-  uploadGalleryMultiple: withPersistentFallback(uploadMedia.array('files', 10)),
+  uploadSingle: withPersistentUpload(uploadImage.single('image'), { convertToWebp: true }),
+  uploadMultiple: withPersistentUpload(uploadImage.array('images', 10), { convertToWebp: true }),
+  uploadGallerySingle: withPersistentUpload(uploadMedia.single('media'), { convertToWebp: true }),
+  uploadGalleryMultiple: withPersistentUpload(uploadMedia.array('files', 10), { convertToWebp: true }),
   uploadMembershipFiles,
   resolveUploadedFileUrl,
+  deleteStoredMediaByUrl,
   isCloudinaryConfigured,
+  isGcsConfigured,
 };

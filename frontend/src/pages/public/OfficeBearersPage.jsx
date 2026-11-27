@@ -5,6 +5,7 @@ import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import SafeImage from '../../components/common/SafeImage';
 
 const BearerCard = memo(function BearerCard({ b, isTa }) {
@@ -58,26 +59,32 @@ export default function OfficeBearersPage() {
 
   const handleDistrictChange = useCallback((e) => setSelectedDistrict(e.target.value), []);
 
-  useEffect(() => {
-    let active = true;
+  const fetchBearers = useCallback((isActive = () => true) => {
     api
-      .get('/office-bearers')
+      .get('/office-bearers', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         const data = res.data?.data || [];
         setBearers(data);
         setCachedData('bearers', data);
       })
       .catch(() => {
-        if (active && !initialCached) setBearers([]);
+        if (isActive() && !getCachedData('bearers')) setBearers([]);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchBearers(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchBearers]);
+
+  useAutoRefresh('bearers', fetchBearers);
 
   const filtered = useMemo(() => {
     if (selectedDistrict === 'all') return bearers;

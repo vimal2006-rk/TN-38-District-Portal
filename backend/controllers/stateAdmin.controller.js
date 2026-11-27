@@ -6,7 +6,7 @@ const getAllStateAdmins = async (req, res, next) => {
   try {
     const cached = getCache('stateAdmins:all');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -16,7 +16,7 @@ const getAllStateAdmins = async (req, res, next) => {
     });
     const payload = { success: true, data: admins };
     setCache('stateAdmins:all', payload, 30000);
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);

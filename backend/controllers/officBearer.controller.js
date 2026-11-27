@@ -1,7 +1,6 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
-const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
-const { evictCachedMedia } = require('./media.controller');
+const { resolveUploadedFileUrl, deleteStoredMediaByUrl } = require('../middleware/upload.middleware');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getOfficBearersByDistrict = async (req, res, next) => {
@@ -10,7 +9,7 @@ const getOfficBearersByDistrict = async (req, res, next) => {
     const cacheKey = `admin:bearers:district:${districtId}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -20,7 +19,7 @@ const getOfficBearersByDistrict = async (req, res, next) => {
     });
     const payload = { success: true, data: bearers };
     setCache(cacheKey, payload, 30000);
-    res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);
@@ -49,7 +48,7 @@ const getAllOfficBearers = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -62,7 +61,7 @@ const getAllOfficBearers = async (req, res, next) => {
     const payload = { success: true, data: bearers };
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     } else if (isAdmin) {
       res.set('Cache-Control', 'no-store');
     }
@@ -111,6 +110,7 @@ const createOfficBearer = async (req, res, next) => {
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
     invalidateCache('admin:bearers:');
+    invalidateCache('districts:');
 
     await logActivity({
       userId: req.user?.id,
@@ -132,6 +132,9 @@ const updateOfficBearer = async (req, res, next) => {
     const bearerId = parseInt(req.params.id, 10);
     const { districtId, nameEn, nameTa, roleEn, roleTa, phone, photoUrl, sortOrder, isActive } = req.body;
     const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : photoUrl;
+    const previous = req.file
+      ? await prisma.officBearer.findUnique({ where: { id: bearerId }, select: { photoUrl: true } })
+      : null;
 
     const bearer = await prisma.officBearer.update({
       where: { id: bearerId },
@@ -148,7 +151,11 @@ const updateOfficBearer = async (req, res, next) => {
       },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    if (previous?.photoUrl && previous.photoUrl !== bearer.photoUrl) {
+      await deleteStoredMediaByUrl(previous.photoUrl);
+    }
     invalidateCache('admin:bearers:');
+    invalidateCache('districts:');
 
     await logActivity({
       userId: req.user?.id,
@@ -173,16 +180,11 @@ const deleteOfficBearer = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Administration member not found' });
     }
 
-    if (existing.photoUrl && existing.photoUrl.includes('/media/')) {
-      const mediaId = existing.photoUrl.split('/media/').pop().split('?')[0];
-      if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
-        evictCachedMedia(mediaId);
-        await prisma.uploadedMedia.deleteMany({ where: { id: mediaId } }).catch(() => {});
-      }
-    }
+    await deleteStoredMediaByUrl(existing.photoUrl);
 
     await prisma.officBearer.delete({ where: { id: bearerId } });
     invalidateCache('admin:bearers:');
+    invalidateCache('districts:');
 
     await logActivity({
       userId: req.user?.id,

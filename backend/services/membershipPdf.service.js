@@ -4,6 +4,26 @@ const path = require('path');
 const prisma = require('../config/database');
 const { getCachedMedia, cacheMediaItem } = require('../controllers/media.controller');
 
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch {
+  sharp = null;
+}
+
+const normalizePdfImageBuffer = async (buf) => {
+  if (!buf || buf.length < 12) return buf;
+  const isWebp = buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+  if (isWebp && sharp) {
+    try {
+      return await sharp(buf).png().toBuffer();
+    } catch {
+      return buf;
+    }
+  }
+  return buf;
+};
+
 const LOGO_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'logo.jpg');
 const QR_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'tmssa-qr.png');
 
@@ -27,44 +47,48 @@ const getStaticAssetBuffer = (type) => {
 const loadImageBuffer = async (fileUrl) => {
   if (!fileUrl) return null;
   try {
+    let rawBuf = null;
     // Check persistent PostgreSQL UploadedMedia store directly (no loopback HTTP needed)
     if (fileUrl.includes('/media/')) {
       const mediaId = fileUrl.split('/media/').pop().split('?')[0];
       if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
         const cached = getCachedMedia(mediaId);
-        if (cached?.data) return cached.data;
-        const record = await prisma.uploadedMedia.findUnique({
-          where: { id: mediaId },
-          select: { mimeType: true, data: true },
-        });
-        if (record?.data) {
-          const buf = Buffer.isBuffer(record.data) ? record.data : Buffer.from(record.data);
-          cacheMediaItem(mediaId, { mimeType: record.mimeType || 'image/jpeg', data: buf });
-          return buf;
+        if (cached?.data) {
+          rawBuf = cached.data;
+        } else {
+          const record = await prisma.uploadedMedia.findUnique({
+            where: { id: mediaId },
+            select: { mimeType: true, data: true },
+          });
+          if (record?.data) {
+            const buf = Buffer.isBuffer(record.data) ? record.data : Buffer.from(record.data);
+            cacheMediaItem(mediaId, { mimeType: record.mimeType || 'image/jpeg', data: buf });
+            rawBuf = buf;
+          }
         }
       }
     }
     // Check local /uploads/ path first
-    if (fileUrl.includes('/uploads/')) {
+    if (!rawBuf && fileUrl.includes('/uploads/')) {
       const filename = fileUrl.split('/uploads/').pop();
       const localPath = path.join(__dirname, '..', 'uploads', filename);
       if (fs.existsSync(localPath)) {
-        return fs.readFileSync(localPath);
+        rawBuf = fs.readFileSync(localPath);
       }
     }
-    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    if (!rawBuf && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
       const res = await fetch(fileUrl);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
-      return Buffer.from(arr);
+      rawBuf = Buffer.from(arr);
     }
-    if (fs.existsSync(fileUrl)) {
-      return fs.readFileSync(fileUrl);
+    if (!rawBuf && fs.existsSync(fileUrl)) {
+      rawBuf = fs.readFileSync(fileUrl);
     }
+    return rawBuf ? await normalizePdfImageBuffer(rawBuf) : null;
   } catch {
     return null;
   }
-  return null;
 };
 
 const formatPaymentStatusLabel = (status) => {

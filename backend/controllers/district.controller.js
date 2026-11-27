@@ -16,7 +16,7 @@ const getAllDistricts = async (req, res, next) => {
     const cacheKey = `districts:all:${isActive ?? 'any'}:${usePagination ? `${pageNum}:${pageSize}` : 'full'}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -41,7 +41,7 @@ const getAllDistricts = async (req, res, next) => {
 
     const payload = { success: true, data: districts };
     setCache(cacheKey, payload, 60000);
-    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);
@@ -56,7 +56,7 @@ const getDistrictById = async (req, res, next) => {
     const cacheKey = `districts:one:${id}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -78,7 +78,7 @@ const getDistrictById = async (req, res, next) => {
 
     const payload = { success: true, data: district };
     setCache(cacheKey, payload, 60000);
-    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);

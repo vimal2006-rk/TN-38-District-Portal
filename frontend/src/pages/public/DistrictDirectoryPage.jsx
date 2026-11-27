@@ -4,6 +4,7 @@ import { Search, MapPin } from 'lucide-react';
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
 import { TN_DISTRICTS, findLocalDistrict } from '../../utils/districtsData';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import api from '../../services/api';
 
 const mergeWithLocal = (apiDistricts) =>
@@ -22,23 +23,29 @@ export default function DistrictDirectoryPage() {
   const [districts, setDistricts] = useState(initialDistricts);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    api.get('/districts')
+  const fetchDistricts = useCallback((isActive = () => true) => {
+    api.get('/districts', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         if (res.data?.data?.length > 0) {
           setCachedData('districts', res.data.data);
           setDistricts(mergeWithLocal(res.data.data));
         }
       })
       .catch(() => {
-        if (active && !initialDistricts?.length) setDistricts(TN_DISTRICTS);
+        if (isActive() && !getCachedData('districts')) setDistricts(TN_DISTRICTS);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchDistricts(() => active);
     return () => {
       active = false;
     };
-  }, [initialDistricts]);
+  }, [fetchDistricts]);
+
+  useAutoRefresh('districts', fetchDistricts);
 
   const handleSearchChange = useCallback((e) => setSearch(e.target.value), []);
   const handleClearSearch = useCallback(() => setSearch(''), []);

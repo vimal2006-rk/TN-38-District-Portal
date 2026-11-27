@@ -1,8 +1,11 @@
 const prisma = require('../config/database');
 const cloudinary = require('../config/cloudinary');
+const {
+  resolveUploadedFileUrl,
+  deleteStoredMediaByUrl,
+  isCloudinaryConfigured,
+} = require('../middleware/upload.middleware');
 const { logActivity } = require('../services/activityLog.service');
-const { resolveUploadedFileUrl, isCloudinaryConfigured } = require('../middleware/upload.middleware');
-const { evictCachedMedia } = require('./media.controller');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllGallery = async (req, res, next) => {
@@ -46,7 +49,7 @@ const getAllGallery = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -74,7 +77,9 @@ const getAllGallery = async (req, res, next) => {
 
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
 
     return res.status(200).json(payload);
@@ -259,14 +264,8 @@ const deleteMedia = async (req, res, next) => {
       }
     }
 
-    // Clean up persistent PostgreSQL media entry if stored in DB fallback
-    if (existing.mediaUrl && existing.mediaUrl.includes('/media/')) {
-      const mediaId = existing.mediaUrl.split('/media/').pop().split('?')[0];
-      if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
-        evictCachedMedia(mediaId);
-        await prisma.uploadedMedia.deleteMany({ where: { id: mediaId } }).catch(() => {});
-      }
-    }
+    // Clean up persistent GCS or PostgreSQL media entry
+    await deleteStoredMediaByUrl(existing.mediaUrl);
 
     await prisma.gallery.delete({ where: { id: mediaId } });
     invalidateCache('gallery:');

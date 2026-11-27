@@ -1,6 +1,6 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
-const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { resolveUploadedFileUrl, deleteStoredMediaByUrl } = require('../middleware/upload.middleware');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllEvents = async (req, res, next) => {
@@ -40,7 +40,7 @@ const getAllEvents = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -68,7 +68,9 @@ const getAllEvents = async (req, res, next) => {
 
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
 
     return res.status(200).json(payload);
@@ -86,7 +88,7 @@ const getEventById = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -103,7 +105,9 @@ const getEventById = async (req, res, next) => {
     const payload = { success: true, data: event };
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
     return res.status(200).json(payload);
   } catch (err) {
@@ -117,7 +121,7 @@ const getEventsByDistrict = async (req, res, next) => {
     const cacheKey = `events:district:${districtId}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -128,7 +132,7 @@ const getEventsByDistrict = async (req, res, next) => {
 
     const payload = { success: true, data: events };
     setCache(cacheKey, payload, 30000);
-    res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);
@@ -234,6 +238,9 @@ const updateEvent = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    if (req.file && existing.imageUrl && existing.imageUrl !== event.imageUrl) {
+      await deleteStoredMediaByUrl(existing.imageUrl);
+    }
     invalidateCache('events:');
 
     await logActivity({
@@ -290,6 +297,7 @@ const deleteEvent = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
 
+    await deleteStoredMediaByUrl(existing.imageUrl);
     await prisma.event.delete({ where: { id: eventId } });
     invalidateCache('events:');
 

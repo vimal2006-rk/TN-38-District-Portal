@@ -139,6 +139,7 @@ export default function ManageOfficeBearersPage() {
       }
 
       clearCachedData('bearers');
+      clearCachedData('districts');
       revokePreviewBlob();
       setModalOpen(false);
       fetchBearers();
@@ -154,6 +155,7 @@ export default function ManageOfficeBearersPage() {
     try {
       await api.delete(`/admin/administration/${deleteTarget.id}`);
       clearCachedData('bearers');
+      clearCachedData('districts');
       toast.success('Administration member deleted');
       setDeleteTarget(null);
       fetchBearers();

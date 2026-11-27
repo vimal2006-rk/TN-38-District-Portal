@@ -1,10 +1,11 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Newspaper, Calendar, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import SafeImage from '../../components/common/SafeImage';
 
 const NewsCard = memo(function NewsCard({ item, isTa }) {
@@ -67,26 +68,32 @@ export default function NewsPage() {
   const [newsList, setNewsList] = useState(initialCached || []);
   const [loading, setLoading] = useState(!initialCached);
 
-  useEffect(() => {
-    let active = true;
+  const fetchNews = useCallback((isActive = () => true) => {
     api
-      .get('/news')
+      .get('/news', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         const data = res.data?.data || [];
         setNewsList(data);
         setCachedData('news', data);
       })
       .catch(() => {
-        if (active && !initialCached) setNewsList([]);
+        if (isActive() && !getCachedData('news')) setNewsList([]);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchNews(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchNews]);
+
+  useAutoRefresh('news', fetchNews);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">

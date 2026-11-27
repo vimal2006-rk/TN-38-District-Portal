@@ -8,7 +8,7 @@ const getDistrictAdminsByDistrict = async (req, res, next) => {
     const cacheKey = `districtAdmins:district:${districtId}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -18,7 +18,7 @@ const getDistrictAdminsByDistrict = async (req, res, next) => {
     });
     const payload = { success: true, data: admins };
     setCache(cacheKey, payload, 30000);
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);
@@ -31,7 +31,7 @@ const getAllDistrictAdmins = async (req, res, next) => {
     const cacheKey = `districtAdmins:all:${districtId || 'all'}`;
     const cached = getCache(cacheKey);
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -45,7 +45,7 @@ const getAllDistrictAdmins = async (req, res, next) => {
     });
     const payload = { success: true, data: admins };
     setCache(cacheKey, payload, 30000);
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);

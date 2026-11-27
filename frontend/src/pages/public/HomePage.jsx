@@ -18,12 +18,12 @@ import {
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import api from '../../services/api';
 
 const HERO_SLIDES = [
   { id: 1, image: '/hero/hero-1.webp', alt: 'TMSSA Leader 1' },
-  { id: 2, image: '/hero/hero-2.webp', alt: 'TMSSA Leader 2' },
-  { id: 3, image: '/hero/hero-3.webp', alt: 'TMSSA Leader 3' }
+  { id: 2, image: '/hero/hero-2.webp', alt: 'TMSSA Leader 2' }
 ];
 
 const MOBILE_BUSINESS_POINTS = [
@@ -188,23 +188,29 @@ export default function HomePage() {
   const initialDistricts = useMemo(() => getCachedData('districts') || TN_DISTRICTS, []);
   const [districts, setDistricts] = useState(initialDistricts);
 
-  useEffect(() => {
-    let active = true;
-    api.get('/districts')
+  const fetchDistricts = useCallback((isActive = () => true) => {
+    api.get('/districts', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         if (res.data?.data?.length > 0) {
           setDistricts(res.data.data);
           setCachedData('districts', res.data.data);
         }
       })
       .catch(() => {
-        if (active && !initialDistricts?.length) setDistricts(TN_DISTRICTS);
+        if (isActive() && !getCachedData('districts')) setDistricts(TN_DISTRICTS);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchDistricts(() => active);
     return () => {
       active = false;
     };
-  }, [initialDistricts]);
+  }, [fetchDistricts]);
+
+  useAutoRefresh('districts', fetchDistricts);
 
   const heroBadges = useMemo(
     () => [

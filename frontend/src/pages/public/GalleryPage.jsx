@@ -4,6 +4,8 @@ import { Image as ImageIcon, Camera, Video, X } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import SafeImage from '../../components/common/SafeImage';
 
 const GalleryCard = memo(function GalleryCard({ item, isTa, onSelect }) {
   return (
@@ -20,12 +22,13 @@ const GalleryCard = memo(function GalleryCard({ item, isTa, onSelect }) {
             </span>
           </>
         ) : item.mediaUrl ? (
-          <img
+          <SafeImage
             src={optimizeImageUrl(item.mediaUrl, { width: 600 })}
             alt={isTa ? item.titleTa || item.titleEn : item.titleEn || 'Gallery'}
             loading="lazy"
             decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fallback={<ImageIcon size={36} className="text-orange-400" />}
           />
         ) : (
           <ImageIcon size={36} className="text-orange-400" />
@@ -54,26 +57,32 @@ export default function GalleryPage() {
 
   const closeModal = useCallback(() => setSelectedItem(null), []);
 
-  useEffect(() => {
-    let active = true;
+  const fetchGallery = useCallback((isActive = () => true) => {
     api
-      .get('/gallery')
+      .get('/gallery', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         const data = res.data?.data || [];
         setItems(data);
         setCachedData('gallery', data);
       })
       .catch(() => {
-        if (active && !initialCached) setItems([]);
+        if (isActive() && !getCachedData('gallery')) setItems([]);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchGallery(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchGallery]);
+
+  useAutoRefresh('gallery', fetchGallery);
 
   const categories = useMemo(() => {
     const cats = new Set(items.map((i) => i.category || 'General'));

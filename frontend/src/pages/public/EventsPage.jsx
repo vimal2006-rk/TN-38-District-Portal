@@ -1,21 +1,24 @@
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import SafeImage from '../../components/common/SafeImage';
 
 const EventCard = memo(function EventCard({ event, isTa }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between">
       {event.imageUrl && (
-        <img
+        <SafeImage
           src={optimizeImageUrl(event.imageUrl, { width: 640 })}
           alt={isTa ? event.titleTa : event.titleEn}
           loading="lazy"
           decoding="async"
           className="h-44 w-full object-cover"
+          fallback={null}
         />
       )}
 
@@ -69,26 +72,32 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(!initialCached);
   const [filter, setFilter] = useState('ALL');
 
-  useEffect(() => {
-    let active = true;
+  const fetchEvents = useCallback((isActive = () => true) => {
     api
-      .get('/events')
+      .get('/events', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         const data = res.data?.data || [];
         setEvents(data);
         setCachedData('events', data);
       })
       .catch(() => {
-        if (active && !initialCached) setEvents([]);
+        if (isActive() && !getCachedData('events')) setEvents([]);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchEvents(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchEvents]);
+
+  useAutoRefresh('events', fetchEvents);
 
   const tabs = useMemo(
     () => [

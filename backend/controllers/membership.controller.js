@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { resolveUploadedFileUrl, deleteStoredMediaByUrl } = require('../middleware/upload.middleware');
 const { logActivity } = require('../services/activityLog.service');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 const {
@@ -73,7 +73,7 @@ const getMembershipConfig = async (req, res, next) => {
   try {
     const cached = getCache('membership:config');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
       return res.status(200).json(cached);
     }
 
@@ -102,7 +102,7 @@ const getMembershipConfig = async (req, res, next) => {
     };
 
     setCache('membership:config', payload, 60000);
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
     return res.status(200).json(payload);
   } catch (err) {
     next(err);
@@ -743,6 +743,9 @@ const updateMembershipSettings = async (req, res, next) => {
         ...(resolvedQr && { qrCodeUrl: resolvedQr }),
       },
     });
+    if (req.file && existing.qrCodeUrl && existing.qrCodeUrl !== updated.qrCodeUrl) {
+      await deleteStoredMediaByUrl(existing.qrCodeUrl);
+    }
 
     invalidateCache('membership:');
 

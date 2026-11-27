@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, Newspaper } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 
 export default function NewsDetailPage() {
   const { id } = useParams();
@@ -13,28 +15,38 @@ export default function NewsDetailPage() {
   const cached = useMemo(() => getCachedData(`news_${id}`), [id]);
   const [article, setArticle] = useState(cached);
   const [loading, setLoading] = useState(!cached);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let active = true;
-    if (!cached) setLoading(true);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchArticle = useCallback(() => {
     api
       .get(`/news/${id}`)
       .then((res) => {
-        if (!active) return;
+        if (!mountedRef.current) return;
         const data = res.data?.data || null;
         setArticle(data);
         if (data) setCachedData(`news_${id}`, data);
       })
       .catch(() => {
-        if (active && !cached) setArticle(null);
+        if (mountedRef.current && !getCachedData(`news_${id}`)) setArticle(null);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (mountedRef.current) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [id, cached]);
+  }, [id]);
+
+  useEffect(() => {
+    if (!cached) setLoading(true);
+    fetchArticle();
+  }, [cached, fetchArticle]);
+
+  useAutoRefresh([`news_${id}`, 'news'], fetchArticle);
 
   if (loading) {
     return (
@@ -77,11 +89,16 @@ export default function NewsDetailPage() {
         </h1>
 
         {article.imageUrl ? (
-          <img
+          <SafeImage
             src={optimizeImageUrl(article.imageUrl, { width: 1200 })}
             alt={isTa ? article.titleTa : article.titleEn}
             decoding="async"
             className="w-full max-h-[420px] object-cover rounded-2xl"
+            fallback={
+              <div className="h-56 bg-gradient-to-tr from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center text-white">
+                <Newspaper size={48} className="opacity-70" />
+              </div>
+            }
           />
         ) : (
           <div className="h-56 bg-gradient-to-tr from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center text-white">

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Phone, ExternalLink, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { findLocalDistrict } from '../../utils/districtsData';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import api from '../../services/api';
 
 const DEFAULT_ADMINS = [
@@ -38,12 +39,10 @@ export default function DistrictDetailsPage() {
   const [district, setDistrict] = useState(cached);
   const [loading, setLoading] = useState(!cached);
 
-  useEffect(() => {
-    let active = true;
-    if (!cached) setLoading(true);
-    api.get(`/districts/${slug}`)
+  const fetchDistrict = useCallback((isActive = () => true) => {
+    api.get(`/districts/${slug}`, { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         if (res.data?.data) {
           setDistrict(res.data.data);
           setCachedData(`district_${slug}`, res.data.data);
@@ -52,17 +51,25 @@ export default function DistrictDetailsPage() {
         }
       })
       .catch(() => {
-        if (active && !cached) {
+        if (isActive() && !getCachedData(`district_${slug}`)) {
           setDistrict(buildLocalFallback(slug));
         }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isActive()) setLoading(false);
       });
+  }, [slug]);
+
+  useEffect(() => {
+    let active = true;
+    if (!cached) setLoading(true);
+    fetchDistrict(() => active);
     return () => {
       active = false;
     };
-  }, [slug, cached]);
+  }, [cached, fetchDistrict]);
+
+  useAutoRefresh([`district_${slug}`, 'districts', 'bearers'], fetchDistrict);
 
   if (loading) {
     return (

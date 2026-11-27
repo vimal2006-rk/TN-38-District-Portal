@@ -1,6 +1,6 @@
 const prisma = require('../config/database');
 const { logActivity } = require('../services/activityLog.service');
-const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
+const { resolveUploadedFileUrl, deleteStoredMediaByUrl } = require('../middleware/upload.middleware');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllNews = async (req, res, next) => {
@@ -37,7 +37,7 @@ const getAllNews = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -65,7 +65,9 @@ const getAllNews = async (req, res, next) => {
 
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
 
     return res.status(200).json(payload);
@@ -83,7 +85,7 @@ const getNewsById = async (req, res, next) => {
     if (cacheKey) {
       const cached = getCache(cacheKey);
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        res.set('Cache-Control', 'public, max-age=0, must-revalidate');
         return res.status(200).json(cached);
       }
     }
@@ -100,7 +102,9 @@ const getNewsById = async (req, res, next) => {
     const payload = { success: true, data: news };
     if (cacheKey) {
       setCache(cacheKey, payload, 30000);
-      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    } else if (isAdmin) {
+      res.set('Cache-Control', 'no-store');
     }
     return res.status(200).json(payload);
   } catch (err) {
@@ -187,6 +191,9 @@ const updateNews = async (req, res, next) => {
       data,
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    if (req.file && existing.imageUrl && existing.imageUrl !== news.imageUrl) {
+      await deleteStoredMediaByUrl(existing.imageUrl);
+    }
     invalidateCache('news:');
 
     await logActivity({
@@ -212,6 +219,7 @@ const deleteNews = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'News not found' });
     }
 
+    await deleteStoredMediaByUrl(existing.imageUrl);
     await prisma.news.delete({ where: { id: newsId } });
     invalidateCache('news:');
 

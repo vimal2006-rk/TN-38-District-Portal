@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, MapPin, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -13,28 +15,38 @@ export default function EventDetailPage() {
   const cached = useMemo(() => getCachedData(`event_${id}`), [id]);
   const [event, setEvent] = useState(cached);
   const [loading, setLoading] = useState(!cached);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let active = true;
-    if (!cached) setLoading(true);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchEvent = useCallback(() => {
     api
       .get(`/events/${id}`)
       .then((res) => {
-        if (!active) return;
+        if (!mountedRef.current) return;
         const data = res.data?.data || null;
         setEvent(data);
         if (data) setCachedData(`event_${id}`, data);
       })
       .catch(() => {
-        if (active && !cached) setEvent(null);
+        if (mountedRef.current && !getCachedData(`event_${id}`)) setEvent(null);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (mountedRef.current) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [id, cached]);
+  }, [id]);
+
+  useEffect(() => {
+    if (!cached) setLoading(true);
+    fetchEvent();
+  }, [cached, fetchEvent]);
+
+  useAutoRefresh([`event_${id}`, 'events'], fetchEvent);
 
   if (loading) {
     return (
@@ -71,11 +83,12 @@ export default function EventDetailPage() {
         </h1>
 
         {event.imageUrl && (
-          <img
+          <SafeImage
             src={optimizeImageUrl(event.imageUrl, { width: 1200 })}
             alt={isTa ? event.titleTa : event.titleEn}
             decoding="async"
             className="w-full max-h-[420px] object-cover rounded-2xl"
+            fallback={null}
           />
         )}
 

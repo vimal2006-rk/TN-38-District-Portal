@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import { getCachedData, setCachedData, clearCachedData } from '../../utils/clientCache';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import api from '../../services/api';
 import { removeSignatureBackground } from '../../utils/signatureProcessor';
@@ -122,22 +123,28 @@ export default function MembershipPage() {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
+  const fetchMembershipConfig = useCallback((isActive = () => true) => {
     api
-      .get('/membership/config')
+      .get('/membership/config', { skipDedupe: true })
       .then((res) => {
-        if (!active) return;
+        if (!isActive()) return;
         if (res.data?.data) {
           setConfig((prev) => ({ ...prev, ...res.data.data }));
           setCachedData('membership_config', res.data.data);
         }
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchMembershipConfig(() => active);
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchMembershipConfig]);
+
+  useAutoRefresh('membership_config', fetchMembershipConfig);
 
   const calculatedAge = useMemo(() => {
     if (!form.dob) return '';
