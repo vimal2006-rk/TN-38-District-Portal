@@ -9,6 +9,7 @@ const QUICK_LINKS = [
   { label: 'Events / நிகழ்வுகள்', path: '/events' },
   { label: 'Gallery / படக்காட்சி', path: '/gallery' },
   { label: 'Contact / தொடர்பு', path: '/contact' },
+  { label: 'Terms & Conditions / விதிமுறைகள்', path: '/terms' },
 ];
 
 export default function Footer() {
@@ -107,9 +108,14 @@ export default function Footer() {
           <span>
             © {year} தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன் / Tamilnadu Mobile Sales and Service Association. All rights reserved.
           </span>
-          <span className="flex items-center gap-1">
-            Made with <span className="text-red-400">❤</span> for Tamil Nadu
-          </span>
+          <div className="flex items-center gap-4">
+            <Link to="/terms" className="text-blue-200 hover:text-white underline font-semibold">
+              Terms &amp; Conditions
+            </Link>
+            <span className="flex items-center gap-1">
+              Made with <span className="text-red-400">❤</span> for Tamil Nadu
+            </span>
+          </div>
         </div>
       </div>
     </footer>

@@ -21,6 +21,7 @@ const EventsPage            = React.lazy(() => import('./pages/public/EventsPage
 const EventDetailPage       = React.lazy(() => import('./pages/public/EventDetailPage'));
 const GalleryPage           = React.lazy(() => import('./pages/public/GalleryPage'));
 const ContactPage           = React.lazy(() => import('./pages/public/ContactPage'));
+const TermsAndConditionsPage = React.lazy(() => import('./pages/public/TermsAndConditionsPage'));
 
 // ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
 const AdminLoginPage        = React.lazy(() => import('./pages/admin/AdminLoginPage'));
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="/events/:id"            element={<EventDetailPage />} />
             <Route path="/gallery"               element={<GalleryPage />} />
             <Route path="/contact"               element={<ContactPage />} />
+            <Route path="/terms"                 element={<TermsAndConditionsPage />} />
           </Route>
 
           {/* Admin Login (no auth required) */}
