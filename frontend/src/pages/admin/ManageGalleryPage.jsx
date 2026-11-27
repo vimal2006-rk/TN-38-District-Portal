@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { convertImageToWebp } from '../../utils/imageCompressor';
 import {
   Camera,
   Plus,
@@ -80,7 +81,7 @@ export default function ManageGalleryPage() {
     fetchGallery();
   }, [fetchGallery]);
 
-  const handleFilesSelected = useCallback((e) => {
+  const handleFilesSelected = useCallback(async (e) => {
     const selected = Array.from(e.target.files || []);
     if (selected.length > 10) {
       toast.error('You can upload up to 10 files at once.');
@@ -91,18 +92,29 @@ export default function ManageGalleryPage() {
       toast.error(`File ${oversized.name} exceeds 50MB limit.`);
       return;
     }
-    revokePreviewBlobs();
-    const mapped = selected.map((f) => {
-      const url = URL.createObjectURL(f);
-      previewBlobsRef.current.push(url);
-      return {
-        name: f.name,
-        isVideo: f.type.startsWith('video/'),
-        url,
-      };
-    });
-    setFiles(selected);
-    setPreviews(mapped);
+    try {
+      const processed = await Promise.all(
+        selected.map((f) =>
+          f.type.startsWith('video/')
+            ? f
+            : convertImageToWebp(f, { maxDim: 1600, quality: 0.85 })
+        )
+      );
+      revokePreviewBlobs();
+      const mapped = processed.map((f) => {
+        const url = URL.createObjectURL(f);
+        previewBlobsRef.current.push(url);
+        return {
+          name: f.name,
+          isVideo: f.type.startsWith('video/'),
+          url,
+        };
+      });
+      setFiles(processed);
+      setPreviews(mapped);
+    } catch (err) {
+      toast.error(err?.message || 'Could not convert selected images to WebP');
+    }
   }, [revokePreviewBlobs]);
 
   const handleUploadSubmit = useCallback(async (e) => {

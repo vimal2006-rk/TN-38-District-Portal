@@ -82,7 +82,7 @@ export default function MembershipPage() {
       helpline2: '+91 97879 75782',
       annualFee: 1200,
       halfYearlyFee: 600,
-      qrCodeUrl: '/tmssa-qr.png',
+      qrCodeUrl: '/tmssa-qr.webp',
       nextSerialPreview: `TNMSSA-${new Date().getFullYear()}-0001`,
       ...cached,
     };
@@ -297,7 +297,7 @@ export default function MembershipPage() {
         >
           <div className="p-5 sm:p-7 flex flex-col sm:flex-row items-center gap-4 border-b border-blue-100 bg-gradient-to-r from-[#EEF2FF] via-white to-[#EEF2FF]">
             <img
-              src="/logo.jpg"
+              src="/logo.webp"
               alt="TNMSSA Logo"
               width={80}
               height={80}
@@ -777,7 +777,7 @@ export default function MembershipPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
                   <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-xs text-center space-y-2">
                     <img
-                      src={optimizeImageUrl(config.qrCodeUrl || '/tmssa-qr.png', { width: 400 })}
+                      src={optimizeImageUrl(config.qrCodeUrl || '/tmssa-qr.webp', { width: 400 })}
                       alt="TNMSSA UPI QR Code"
                       loading="lazy"
                       decoding="async"

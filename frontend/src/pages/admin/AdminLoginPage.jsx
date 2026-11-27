@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-200 p-8 space-y-6">
         <div className="text-center space-y-2">
           <img
-            src="/logo.jpg"
+            src="/logo.webp"
             alt="TMSSA Logo"
             className="w-16 h-16 rounded-full object-cover mx-auto border-2 border-[#F07818] shadow-md"
             onError={(e) => {

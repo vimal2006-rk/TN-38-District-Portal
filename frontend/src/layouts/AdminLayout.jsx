@@ -49,7 +49,7 @@ function AdminLayout() {
         <div className="p-4 border-b border-blue-900/60 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 font-bold text-base hover:opacity-90 transition">
             <img
-              src="/logo.jpg"
+              src="/logo.webp"
               alt="TMSSA Logo"
               width={32}
               height={32}

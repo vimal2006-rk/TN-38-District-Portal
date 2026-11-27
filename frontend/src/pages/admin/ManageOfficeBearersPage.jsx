@@ -4,6 +4,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { convertImageToWebp } from '../../utils/imageCompressor';
 import SafeImage from '../../components/common/SafeImage';
 import { Award, Plus, Search, Edit2, Trash2, Upload, X, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -90,14 +91,19 @@ export default function ManageOfficeBearersPage() {
     setModalOpen(true);
   }, [revokePreviewBlob]);
 
-  const handleFileChange = useCallback((e) => {
+  const handleFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    revokePreviewBlob();
-    const url = URL.createObjectURL(file);
-    previewBlobRef.current = url;
-    setPhotoFile(file);
-    setPhotoPreview(url);
+    try {
+      const webpFile = await convertImageToWebp(file, { maxDim: 600, quality: 0.86 });
+      revokePreviewBlob();
+      const url = URL.createObjectURL(webpFile);
+      previewBlobRef.current = url;
+      setPhotoFile(webpFile);
+      setPhotoPreview(url);
+    } catch (err) {
+      toast.error(err?.message || 'Could not convert photo to WebP');
+    }
   }, [revokePreviewBlob]);
 
   const handleSave = useCallback(async (e) => {

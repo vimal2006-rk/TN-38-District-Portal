@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { convertImageToWebp } from '../../utils/imageCompressor';
 import SafeImage from '../../components/common/SafeImage';
 import {
   Newspaper,
@@ -109,18 +110,23 @@ export default function ManageNewsPage() {
     setModalOpen(true);
   }, [revokePreviewBlob]);
 
-  const handleFileChange = useCallback((e) => {
+  const handleFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Image must be smaller than 10MB');
       return;
     }
-    revokePreviewBlob();
-    const url = URL.createObjectURL(file);
-    previewBlobRef.current = url;
-    setImageFile(file);
-    setImagePreview(url);
+    try {
+      const webpFile = await convertImageToWebp(file, { maxDim: 1200, quality: 0.85 });
+      revokePreviewBlob();
+      const url = URL.createObjectURL(webpFile);
+      previewBlobRef.current = url;
+      setImageFile(webpFile);
+      setImagePreview(url);
+    } catch (err) {
+      toast.error(err?.message || 'Could not convert image to WebP');
+    }
   }, [revokePreviewBlob]);
 
   const handleSave = useCallback(async (publishOverride = null) => {

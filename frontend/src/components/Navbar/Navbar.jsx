@@ -61,7 +61,7 @@ function Navbar() {
             className="flex items-center gap-2 sm:gap-3.5 hover:opacity-95 transition-opacity min-w-0 flex-1 sm:flex-initial"
           >
             <img
-              src="/logo.jpg"
+              src="/logo.webp"
               alt="TMSSA Logo"
               width={56}
               height={56}

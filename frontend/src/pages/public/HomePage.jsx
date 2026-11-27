@@ -21,9 +21,9 @@ import { getCachedData, setCachedData } from '../../utils/clientCache';
 import api from '../../services/api';
 
 const HERO_SLIDES = [
-  { id: 1, image: '/hero/hero-1.jpg', alt: 'TMSSA Leader 1' },
-  { id: 2, image: '/hero/hero-2.jpg', alt: 'TMSSA Leader 2' },
-  { id: 3, image: '/hero/hero-3.jpg', alt: 'TMSSA Leader 3' }
+  { id: 1, image: '/hero/hero-1.webp', alt: 'TMSSA Leader 1' },
+  { id: 2, image: '/hero/hero-2.webp', alt: 'TMSSA Leader 2' },
+  { id: 3, image: '/hero/hero-3.webp', alt: 'TMSSA Leader 3' }
 ];
 
 const MOBILE_BUSINESS_POINTS = [
@@ -253,7 +253,7 @@ export default function HomePage() {
               {/* Association Badge with Logo */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
                 <img
-                  src="/logo.jpg"
+                  src="/logo.webp"
                   alt="TMSSA Logo"
                   width={20}
                   height={20}

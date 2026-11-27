@@ -25,7 +25,7 @@ function Footer() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               <img
-                src="/logo.jpg"
+                src="/logo.webp"
                 alt="TMSSA Logo"
                 width={56}
                 height={56}

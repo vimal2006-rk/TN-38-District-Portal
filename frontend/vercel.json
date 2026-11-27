@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/(logo\\.jpg|tmssa-qr\\.png|favicon\\.ico)",
+      "source": "/(logo\\.jpg|logo\\.webp|tmssa-qr\\.png|tmssa-qr\\.webp|favicon\\.ico)",
       "headers": [
         {
           "key": "Cache-Control",

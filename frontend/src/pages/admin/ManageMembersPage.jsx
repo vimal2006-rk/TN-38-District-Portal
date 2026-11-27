@@ -3,6 +3,7 @@ import api, { getAccessToken } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { clearCachedData } from '../../utils/clientCache';
+import { convertImageToWebp } from '../../utils/imageCompressor';
 import {
   Users,
   UserPlus,
@@ -166,7 +167,7 @@ export default function ManageMembersPage() {
     helpline2: '+91 97879 75782',
     address: '',
     termsText: '',
-    qrCodeUrl: '/tmssa-qr.png',
+    qrCodeUrl: '/tmssa-qr.webp',
   });
   const [qrFile, setQrFile] = useState(null);
   const [qrPreview, setQrPreview] = useState('');
@@ -316,7 +317,7 @@ export default function ManageMembersPage() {
       if (res.data?.data) {
         revokeQrBlob();
         setSettingsForm(res.data.data);
-        setQrPreview(res.data.data.qrCodeUrl || '/tmssa-qr.png');
+        setQrPreview(res.data.data.qrCodeUrl || '/tmssa-qr.webp');
         setQrFile(null);
       }
     } catch (err) {
@@ -785,7 +786,7 @@ export default function ManageMembersPage() {
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
                 <img
-                  src={qrPreview || '/tmssa-qr.png'}
+                  src={qrPreview || '/tmssa-qr.webp'}
                   alt="Association UPI QR"
                   className="w-28 h-28 rounded-xl object-contain bg-white border p-1.5"
                 />
@@ -797,14 +798,19 @@ export default function ManageMembersPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        revokeQrBlob();
-                        const blobUrl = URL.createObjectURL(f);
-                        qrObjectUrlRef.current = blobUrl;
-                        setQrFile(f);
-                        setQrPreview(blobUrl);
+                        try {
+                          const webpFile = await convertImageToWebp(f, { maxDim: 600, quality: 0.92 });
+                          revokeQrBlob();
+                          const blobUrl = URL.createObjectURL(webpFile);
+                          qrObjectUrlRef.current = blobUrl;
+                          setQrFile(webpFile);
+                          setQrPreview(blobUrl);
+                        } catch (err) {
+                          toast.error(err?.message || 'Could not convert QR image to WebP');
+                        }
                       }}
                       className="hidden"
                     />
