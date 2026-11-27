@@ -79,6 +79,15 @@ const getNewsById = async (req, res, next) => {
     const { id } = req.params;
     const isAdmin = req.user && (req.user.role === 'SUPER_ADMIN' || req.user.role === 'DISTRICT_ADMIN');
 
+    const cacheKey = !isAdmin ? `news:one:${id}` : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const news = await prisma.news.findUnique({
       where: { id: parseInt(id, 10) },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
@@ -88,7 +97,12 @@ const getNewsById = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'News not found' });
     }
 
-    return res.status(200).json({ success: true, data: news });
+    const payload = { success: true, data: news };
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -234,6 +248,7 @@ const togglePublish = async (req, res, next) => {
       },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('news:');
 
     await logActivity({
       userId: req.user?.id,

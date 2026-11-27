@@ -1,9 +1,65 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
+
+const EventCard = memo(function EventCard({ event, isTa }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between">
+      {event.imageUrl && (
+        <img
+          src={optimizeImageUrl(event.imageUrl, { width: 640 })}
+          alt={isTa ? event.titleTa : event.titleEn}
+          loading="lazy"
+          decoding="async"
+          className="h-44 w-full object-cover"
+        />
+      )}
+
+      <div className="p-6 space-y-4 flex-1">
+        <div className="flex items-center justify-between">
+          <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-xs font-bold">
+            {new Date(event.eventDate).toLocaleDateString()}
+          </span>
+          <span className="text-xs text-gray-400 font-medium">
+            {event.eventTime || event.status || 'UPCOMING'}
+          </span>
+        </div>
+
+        <div>
+          <h3 className="text-base font-bold text-gray-900 leading-snug">
+            {isTa ? event.titleTa || event.titleEn : event.titleEn}
+          </h3>
+          {(event.descriptionEn || event.descriptionTa) && (
+            <p className="text-xs text-gray-500 mt-2 line-clamp-3 leading-relaxed">
+              {isTa ? event.descriptionTa || event.descriptionEn : event.descriptionEn}
+            </p>
+          )}
+        </div>
+
+        {event.location && (
+          <div className="flex items-start gap-2 text-xs text-gray-500 pt-3 border-t border-gray-50">
+            <MapPin size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />
+            <span>{event.location}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="px-6 pb-6 pt-2">
+        <Link
+          to={`/events/${event.id}`}
+          className="w-full py-2.5 rounded-xl border border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+        >
+          <span>{isTa ? 'நிகழ்ச்சி விவரங்கள்' : 'View Event Details'}</span>
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+    </div>
+  );
+});
 
 export default function EventsPage() {
   const { t, i18n } = useTranslation();
@@ -34,6 +90,15 @@ export default function EventsPage() {
     };
   }, []);
 
+  const tabs = useMemo(
+    () => [
+      { key: 'ALL', label: isTa ? 'அனைத்தும்' : 'All Events' },
+      { key: 'UPCOMING', label: isTa ? 'வரவிருக்கும்' : 'Upcoming' },
+      { key: 'COMPLETED', label: isTa ? 'நிறைவடைந்தவை' : 'Completed' },
+    ],
+    [isTa]
+  );
+
   const filtered = useMemo(() => {
     if (filter === 'ALL') return events;
     return events.filter((ev) => (ev.status || 'UPCOMING') === filter);
@@ -55,11 +120,7 @@ export default function EventsPage() {
         </p>
 
         <div className="flex items-center justify-center gap-2 pt-2">
-          {[
-            { key: 'ALL', label: isTa ? 'அனைத்தும்' : 'All Events' },
-            { key: 'UPCOMING', label: isTa ? 'வரவிருக்கும்' : 'Upcoming' },
-            { key: 'COMPLETED', label: isTa ? 'நிறைவடைந்தவை' : 'Completed' },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
@@ -88,59 +149,7 @@ export default function EventsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 laptop:grid-cols-3 gap-5 sm:gap-6">
           {filtered.map((event) => (
-            <div
-              key={event.id}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between"
-            >
-              {event.imageUrl && (
-                <img
-                  src={event.imageUrl}
-                  alt={isTa ? event.titleTa : event.titleEn}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-44 w-full object-cover"
-                />
-              )}
-
-              <div className="p-6 space-y-4 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-xs font-bold">
-                    {new Date(event.eventDate).toLocaleDateString()}
-                  </span>
-                  <span className="text-xs text-gray-400 font-medium">
-                    {event.eventTime || event.status || 'UPCOMING'}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-base font-bold text-gray-900 leading-snug">
-                    {isTa ? event.titleTa || event.titleEn : event.titleEn}
-                  </h3>
-                  {(event.descriptionEn || event.descriptionTa) && (
-                    <p className="text-xs text-gray-500 mt-2 line-clamp-3 leading-relaxed">
-                      {isTa ? event.descriptionTa || event.descriptionEn : event.descriptionEn}
-                    </p>
-                  )}
-                </div>
-
-                {event.location && (
-                  <div className="flex items-start gap-2 text-xs text-gray-500 pt-3 border-t border-gray-50">
-                    <MapPin size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />
-                    <span>{event.location}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="px-6 pb-6 pt-2">
-                <Link
-                  to={`/events/${event.id}`}
-                  className="w-full py-2.5 rounded-xl border border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition"
-                >
-                  <span>{isTa ? 'நிகழ்ச்சி விவரங்கள்' : 'View Event Details'}</span>
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
+            <EventCard key={event.id} event={event} isTa={isTa} />
           ))}
         </div>
       )}

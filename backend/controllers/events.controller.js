@@ -82,6 +82,15 @@ const getEventById = async (req, res, next) => {
     const { id } = req.params;
     const isAdmin = req.user && (req.user.role === 'SUPER_ADMIN' || req.user.role === 'DISTRICT_ADMIN');
 
+    const cacheKey = !isAdmin ? `events:one:${id}` : null;
+    if (cacheKey) {
+      const cached = getCache(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        return res.status(200).json(cached);
+      }
+    }
+
     const event = await prisma.event.findUnique({
       where: { id: parseInt(id, 10) },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
@@ -91,7 +100,12 @@ const getEventById = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
 
-    return res.status(200).json({ success: true, data: event });
+    const payload = { success: true, data: event };
+    if (cacheKey) {
+      setCache(cacheKey, payload, 30000);
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    }
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -100,12 +114,22 @@ const getEventById = async (req, res, next) => {
 const getEventsByDistrict = async (req, res, next) => {
   try {
     const { districtId } = req.params;
+    const cacheKey = `events:district:${districtId}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      return res.status(200).json(cached);
+    }
+
     const events = await prisma.event.findMany({
       where: { districtId: parseInt(districtId, 10), isPublished: true },
       orderBy: { eventDate: 'desc' },
     });
 
-    return res.status(200).json({ success: true, data: events });
+    const payload = { success: true, data: events };
+    setCache(cacheKey, payload, 30000);
+    res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }

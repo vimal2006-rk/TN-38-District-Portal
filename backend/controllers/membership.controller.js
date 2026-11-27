@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
 const { logActivity } = require('../services/activityLog.service');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 const {
   maskAadhaar,
   hashAadhaar,
@@ -70,11 +71,19 @@ const generateSerialNumber = async (tx) => {
 
 const getMembershipConfig = async (req, res, next) => {
   try {
-    const settings = await getOrCreateSettings();
-    const count = await prisma.membershipApplication.count();
+    const cached = getCache('membership:config');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      return res.status(200).json(cached);
+    }
+
+    const [settings, count] = await Promise.all([
+      getOrCreateSettings(),
+      prisma.membershipApplication.count(),
+    ]);
     const nextSerialPreview = `TNMSSA-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       data: {
         associationNameEn: settings.associationNameEn,
@@ -90,7 +99,11 @@ const getMembershipConfig = async (req, res, next) => {
         termsText: settings.termsText,
         nextSerialPreview,
       },
-    });
+    };
+
+    setCache('membership:config', payload, 60000);
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -322,6 +335,7 @@ const registerMembership = async (req, res, next) => {
     });
 
     const pdfToken = signPdfDownloadToken(created.appRecord.serialNumber);
+    invalidateCache('membership:');
 
     await logActivity({
       action: 'NEW_MEMBERSHIP_APPLICATION',
@@ -428,21 +442,38 @@ const downloadReceiptPdf = async (req, res, next) => {
 
 const getMembershipStats = async (req, res, next) => {
   try {
-    const [
-      totalMembers,
-      newApplications,
-      approvedMembers,
-      pendingPayments,
-      verifiedPayments,
-      rejectedPayments,
-    ] = await Promise.all([
-      prisma.membershipApplication.count(),
-      prisma.membershipApplication.count({ where: { membershipStatus: 'PENDING' } }),
-      prisma.membershipApplication.count({ where: { membershipStatus: 'APPROVED' } }),
-      prisma.membershipPayment.count({ where: { paymentStatus: { in: ['PENDING', 'PAYMENT_SUBMITTED'] } } }),
-      prisma.membershipPayment.count({ where: { paymentStatus: 'VERIFIED' } }),
-      prisma.membershipPayment.count({ where: { paymentStatus: 'REJECTED' } }),
+    const [appGroups, payGroups] = await Promise.all([
+      prisma.membershipApplication.groupBy({
+        by: ['membershipStatus'],
+        _count: { _all: true },
+      }),
+      prisma.membershipPayment.groupBy({
+        by: ['paymentStatus'],
+        _count: { _all: true },
+      }),
     ]);
+
+    let totalMembers = 0;
+    let newApplications = 0;
+    let approvedMembers = 0;
+    for (const g of appGroups) {
+      totalMembers += g._count._all;
+      if (g.membershipStatus === 'PENDING') newApplications = g._count._all;
+      else if (g.membershipStatus === 'APPROVED') approvedMembers = g._count._all;
+    }
+
+    let pendingPayments = 0;
+    let verifiedPayments = 0;
+    let rejectedPayments = 0;
+    for (const g of payGroups) {
+      if (g.paymentStatus === 'PENDING' || g.paymentStatus === 'PAYMENT_SUBMITTED') {
+        pendingPayments += g._count._all;
+      } else if (g.paymentStatus === 'VERIFIED') {
+        verifiedPayments = g._count._all;
+      } else if (g.paymentStatus === 'REJECTED') {
+        rejectedPayments = g._count._all;
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -713,6 +744,8 @@ const updateMembershipSettings = async (req, res, next) => {
       },
     });
 
+    invalidateCache('membership:');
+
     await logActivity({
       userId: req.user.id,
       action: 'UPDATE_MEMBERSHIP_SETTINGS',
@@ -737,6 +770,7 @@ const deleteMembershipApplication = async (req, res, next) => {
     }
 
     await prisma.membershipApplication.delete({ where: { id } });
+    invalidateCache('membership:');
 
     await logActivity({
       userId: req.user.id,

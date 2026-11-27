@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { TN_DISTRICTS } from '../../utils/districtsData';
+import { clearCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { Award, Plus, Search, Edit2, Trash2, Upload, X, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -30,6 +32,16 @@ export default function ManageOfficeBearersPage() {
   const [photoPreview, setPhotoPreview] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const previewBlobRef = useRef(null);
+
+  const revokePreviewBlob = useCallback(() => {
+    if (previewBlobRef.current) {
+      URL.revokeObjectURL(previewBlobRef.current);
+      previewBlobRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => revokePreviewBlob, [revokePreviewBlob]);
 
   const fetchBearers = useCallback(async () => {
     setLoading(true);
@@ -50,15 +62,17 @@ export default function ManageOfficeBearersPage() {
     fetchBearers();
   }, [fetchBearers]);
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
+    revokePreviewBlob();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setPhotoFile(null);
     setPhotoPreview('');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const openEditModal = (b) => {
+  const openEditModal = useCallback((b) => {
+    revokePreviewBlob();
     setEditingId(b.id);
     setForm({
       districtId: String(b.districtId || b.district?.id || '1'),
@@ -73,16 +87,19 @@ export default function ManageOfficeBearersPage() {
     setPhotoFile(null);
     setPhotoPreview(b.photoUrl || '');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    revokePreviewBlob();
+    const url = URL.createObjectURL(file);
+    previewBlobRef.current = url;
     setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
+    setPhotoPreview(url);
+  }, [revokePreviewBlob]);
 
-  const handleSave = async (e) => {
+  const handleSave = useCallback(async (e) => {
     e.preventDefault();
     if (!form.nameEn.trim() && !form.nameTa.trim()) {
       toast.error('Please enter member name.');
@@ -114,6 +131,8 @@ export default function ManageOfficeBearersPage() {
         toast.success('Administration member added!');
       }
 
+      clearCachedData('bearers');
+      revokePreviewBlob();
       setModalOpen(false);
       fetchBearers();
     } catch (err) {
@@ -121,19 +140,20 @@ export default function ManageOfficeBearersPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, photoFile, editingId, fetchBearers, revokePreviewBlob]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/admin/administration/${deleteTarget.id}`);
+      clearCachedData('bearers');
       toast.success('Administration member deleted');
       setDeleteTarget(null);
       fetchBearers();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Delete failed');
     }
-  };
+  }, [deleteTarget, fetchBearers]);
 
   return (
     <div className="space-y-6">
@@ -218,8 +238,12 @@ export default function ManageOfficeBearersPage() {
                       <div className="flex items-center gap-3">
                         {b.photoUrl ? (
                           <img
-                            src={b.photoUrl}
+                            src={optimizeImageUrl(b.photoUrl, { width: 160 })}
                             alt={b.nameEn}
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            decoding="async"
                             className="w-10 h-10 rounded-full object-cover border"
                           />
                         ) : (

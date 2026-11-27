@@ -222,6 +222,7 @@ const togglePublishMedia = async (req, res, next) => {
       data: { isPublished },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('gallery:');
 
     await logActivity({
       userId: req.user?.id,

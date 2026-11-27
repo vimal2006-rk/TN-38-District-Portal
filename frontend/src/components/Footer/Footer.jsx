@@ -1,5 +1,8 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ExternalLink } from 'lucide-react';
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 const QUICK_LINKS = [
   { label: 'Home / முகப்பு', path: '/' },
@@ -12,9 +15,7 @@ const QUICK_LINKS = [
   { label: 'Terms & Conditions / விதிமுறைகள்', path: '/terms' },
 ];
 
-export default function Footer() {
-  const year = new Date().getFullYear();
-
+function Footer() {
   return (
     <footer style={{ backgroundColor: '#09246B' }} className="text-blue-200 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -26,6 +27,10 @@ export default function Footer() {
               <img
                 src="/logo.jpg"
                 alt="TMSSA Logo"
+                width={56}
+                height={56}
+                loading="lazy"
+                decoding="async"
                 className="h-14 w-14 rounded-full object-cover border-2 border-[#F07818] shadow-lg flex-shrink-0"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
@@ -106,7 +111,7 @@ export default function Footer() {
           style={{ borderColor: 'rgba(255,255,255,0.1)' }}
         >
           <span>
-            © {year} தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன் / Tamilnadu Mobile Sales and Service Association. All rights reserved.
+            © {CURRENT_YEAR} தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன் / Tamilnadu Mobile Sales and Service Association. All rights reserved.
           </span>
           <div className="flex items-center gap-4">
             <Link to="/terms" className="text-blue-200 hover:text-white underline font-semibold">
@@ -121,3 +126,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+export default memo(Footer);

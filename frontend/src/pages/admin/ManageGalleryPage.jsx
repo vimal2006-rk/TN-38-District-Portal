@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { clearCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import {
   Camera,
   Plus,
@@ -49,6 +51,14 @@ export default function ManageGalleryPage() {
 
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const previewBlobsRef = useRef([]);
+
+  const revokePreviewBlobs = useCallback(() => {
+    previewBlobsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewBlobsRef.current = [];
+  }, []);
+
+  useEffect(() => revokePreviewBlobs, [revokePreviewBlobs]);
 
   const fetchGallery = useCallback(async () => {
     setLoading(true);
@@ -70,7 +80,7 @@ export default function ManageGalleryPage() {
     fetchGallery();
   }, [fetchGallery]);
 
-  const handleFilesSelected = (e) => {
+  const handleFilesSelected = useCallback((e) => {
     const selected = Array.from(e.target.files || []);
     if (selected.length > 10) {
       toast.error('You can upload up to 10 files at once.');
@@ -81,17 +91,21 @@ export default function ManageGalleryPage() {
       toast.error(`File ${oversized.name} exceeds 50MB limit.`);
       return;
     }
-    setFiles(selected);
-    setPreviews(
-      selected.map((f) => ({
+    revokePreviewBlobs();
+    const mapped = selected.map((f) => {
+      const url = URL.createObjectURL(f);
+      previewBlobsRef.current.push(url);
+      return {
         name: f.name,
         isVideo: f.type.startsWith('video/'),
-        url: URL.createObjectURL(f),
-      }))
-    );
-  };
+        url,
+      };
+    });
+    setFiles(selected);
+    setPreviews(mapped);
+  }, [revokePreviewBlobs]);
 
-  const handleUploadSubmit = async (e) => {
+  const handleUploadSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (files.length === 0) {
       toast.error('Please select at least one image or video file.');
@@ -110,7 +124,9 @@ export default function ManageGalleryPage() {
       fd.append('isPublished', String(uploadForm.isPublished));
 
       await api.post('/admin/gallery', fd);
+      clearCachedData('gallery');
       toast.success(`Uploaded ${files.length} file(s) to cloud storage!`);
+      revokePreviewBlobs();
       setUploadOpen(false);
       setFiles([]);
       setPreviews([]);
@@ -128,9 +144,9 @@ export default function ManageGalleryPage() {
     } finally {
       setUploading(false);
     }
-  };
+  }, [files, uploadForm, fetchGallery, revokePreviewBlobs]);
 
-  const handleSaveEdit = async (e) => {
+  const handleSaveEdit = useCallback(async (e) => {
     e.preventDefault();
     if (!editTarget) return;
     setSavingEdit(true);
@@ -143,6 +159,7 @@ export default function ManageGalleryPage() {
         album: editTarget.album || '',
         isPublished: editTarget.isPublished,
       });
+      clearCachedData('gallery');
       toast.success('Gallery item updated!');
       setEditTarget(null);
       fetchGallery();
@@ -151,29 +168,31 @@ export default function ManageGalleryPage() {
     } finally {
       setSavingEdit(false);
     }
-  };
+  }, [editTarget, fetchGallery]);
 
-  const handleTogglePublish = async (item) => {
+  const handleTogglePublish = useCallback(async (item) => {
     try {
       await api.patch(`/admin/gallery/${item.id}/publish`);
+      clearCachedData('gallery');
       toast.success(item.isPublished ? 'Unpublished from gallery' : 'Published to gallery!');
       fetchGallery();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to toggle publish status');
     }
-  };
+  }, [fetchGallery]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/admin/gallery/${deleteTarget.id}`);
+      clearCachedData('gallery');
       toast.success('Media deleted');
       setDeleteTarget(null);
       fetchGallery();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Delete failed');
     }
-  };
+  }, [deleteTarget, fetchGallery]);
 
   return (
     <div className="space-y-6">
@@ -259,8 +278,10 @@ export default function ManageGalleryPage() {
                   <video src={item.mediaUrl} controls className="w-full h-full object-cover" />
                 ) : (
                   <img
-                    src={item.mediaUrl}
+                    src={optimizeImageUrl(item.mediaUrl, { width: 500 })}
                     alt={item.titleEn || 'Gallery item'}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 )}

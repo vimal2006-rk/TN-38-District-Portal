@@ -4,16 +4,16 @@ const getDashboardStats = async () => {
   const now = new Date();
 
   const [
-    totalNews,
-    publishedNews,
+    newsGroups,
     totalEvents,
     upcomingEvents,
-    totalGalleryPhotos,
-    totalGalleryVideos,
+    galleryGroups,
     recentActivities,
   ] = await Promise.all([
-    prisma.news.count(),
-    prisma.news.count({ where: { isPublished: true } }),
+    prisma.news.groupBy({
+      by: ['isPublished'],
+      _count: { _all: true },
+    }),
     prisma.event.count(),
     prisma.event.count({
       where: {
@@ -23,8 +23,10 @@ const getDashboardStats = async () => {
         ],
       },
     }),
-    prisma.gallery.count({ where: { mediaType: 'IMAGE' } }),
-    prisma.gallery.count({ where: { mediaType: 'VIDEO' } }),
+    prisma.gallery.groupBy({
+      by: ['mediaType'],
+      _count: { _all: true },
+    }),
     prisma.adminActivityLog.findMany({
       take: 12,
       orderBy: { createdAt: 'desc' },
@@ -33,6 +35,20 @@ const getDashboardStats = async () => {
       },
     }),
   ]);
+
+  let totalNews = 0;
+  let publishedNews = 0;
+  for (const g of newsGroups) {
+    totalNews += g._count._all;
+    if (g.isPublished) publishedNews = g._count._all;
+  }
+
+  let totalGalleryPhotos = 0;
+  let totalGalleryVideos = 0;
+  for (const g of galleryGroups) {
+    if (g.mediaType === 'IMAGE') totalGalleryPhotos = g._count._all;
+    else if (g.mediaType === 'VIDEO') totalGalleryVideos = g._count._all;
+  }
 
   return {
     stats: {

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import api, { getAccessToken } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import { clearCachedData } from '../../utils/clientCache';
 import {
   Users,
   UserPlus,
@@ -34,6 +36,98 @@ const MEMBER_BADGE = {
   REJECTED: 'bg-red-100 text-red-700',
   INACTIVE: 'bg-gray-100 text-gray-600',
 };
+
+const ApplicationRow = memo(function ApplicationRow({
+  app,
+  onOpenDetail,
+  onDownloadPdf,
+  onVerifyPayment,
+  onApproveMembership,
+  onRequestDelete,
+}) {
+  const pay = app.payments?.[0] || {};
+  return (
+    <tr className="hover:bg-gray-50">
+      <td className="py-3 px-4 font-mono font-bold text-[#09246B]">
+        {app.serialNumber}
+      </td>
+      <td className="py-3 px-4">
+        <p className="font-bold text-gray-900">{app.applicantName}</p>
+        <p className="text-[11px] text-gray-400">{app.shopName}</p>
+      </td>
+      <td className="py-3 px-4">
+        <p className="font-mono font-semibold text-gray-800">{app.phone}</p>
+        <p className="text-[11px] text-gray-400">{app.email}</p>
+      </td>
+      <td className="py-3 px-4 font-mono">
+        {new Date(app.registrationDate || app.createdAt).toLocaleDateString('en-IN')}
+      </td>
+      <td className="py-3 px-4">
+        <p className="font-mono font-bold text-gray-800">{pay.upiTransactionId || '—'}</p>
+        <p className="text-[11px] text-gray-500">₹{pay.amount || 1200}</p>
+      </td>
+      <td className="py-3 px-4">
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            PAYMENT_BADGE[pay.paymentStatus] || PAYMENT_BADGE.PENDING
+          }`}
+        >
+          {pay.paymentStatus === 'PAYMENT_SUBMITTED' ? 'PENDING VERIFICATION' : pay.paymentStatus}
+        </span>
+      </td>
+      <td className="py-3 px-4">
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            MEMBER_BADGE[app.membershipStatus] || MEMBER_BADGE.PENDING
+          }`}
+        >
+          {app.membershipStatus}
+        </span>
+      </td>
+      <td className="py-3 px-4 text-right">
+        <div className="inline-flex items-center gap-1">
+          <button
+            onClick={() => onOpenDetail(app.id)}
+            title="View Full Application"
+            className="p-1.5 rounded-lg text-[#123DAA] hover:bg-blue-50"
+          >
+            <Eye size={15} />
+          </button>
+          <button
+            onClick={() => onDownloadPdf(app.serialNumber, 'application')}
+            title="Download Application PDF"
+            className="p-1.5 rounded-lg text-gray-700 hover:bg-gray-100"
+          >
+            <FileText size={15} />
+          </button>
+          {pay.paymentStatus !== 'VERIFIED' && (
+            <button
+              onClick={() => onVerifyPayment(app.id, 'VERIFIED')}
+              className="px-2 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold"
+            >
+              Verify Pay
+            </button>
+          )}
+          {pay.paymentStatus === 'VERIFIED' && app.membershipStatus !== 'APPROVED' && (
+            <button
+              onClick={() => onApproveMembership(app.id, 'APPROVED')}
+              className="px-2 py-1 rounded-lg bg-[#09246B] text-white text-[11px] font-semibold"
+            >
+              Approve
+            </button>
+          )}
+          <button
+            onClick={() => onRequestDelete(app)}
+            title="Delete Application"
+            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 export default function ManageMembersPage() {
   const [stats, setStats] = useState({
@@ -77,6 +171,16 @@ export default function ManageMembersPage() {
   const [qrFile, setQrFile] = useState(null);
   const [qrPreview, setQrPreview] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+  const qrObjectUrlRef = useRef(null);
+
+  const revokeQrBlob = useCallback(() => {
+    if (qrObjectUrlRef.current) {
+      URL.revokeObjectURL(qrObjectUrlRef.current);
+      qrObjectUrlRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => revokeQrBlob, [revokeQrBlob]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -109,7 +213,7 @@ export default function ManageMembersPage() {
     fetchAll();
   }, [fetchAll]);
 
-  const openDetail = async (id) => {
+  const openDetail = useCallback(async (id) => {
     setLoadingDetail(true);
     try {
       const res = await api.get(`/admin/membership/applications/${id}`);
@@ -119,9 +223,9 @@ export default function ManageMembersPage() {
     } finally {
       setLoadingDetail(false);
     }
-  };
+  }, []);
 
-  const handleDownloadPdf = async (serialNumber, type) => {
+  const handleDownloadPdf = useCallback(async (serialNumber, type) => {
     try {
       const token = getAccessToken();
       const base = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -139,9 +243,9 @@ export default function ManageMembersPage() {
     } catch (err) {
       toast.error(err.message || 'Could not download PDF');
     }
-  };
+  }, []);
 
-  const handlePaymentAction = async (id, paymentStatus, reason = '') => {
+  const handlePaymentAction = useCallback(async (id, paymentStatus, reason = '') => {
     setProcessing(true);
     try {
       await api.patch(`/admin/membership/applications/${id}/payment`, {
@@ -158,9 +262,9 @@ export default function ManageMembersPage() {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [fetchAll, selectedDetail?.id, openDetail]);
 
-  const handleMembershipAction = async (id, membershipStatus, reason = '') => {
+  const handleMembershipAction = useCallback(async (id, membershipStatus, reason = '') => {
     setProcessing(true);
     try {
       await api.patch(`/admin/membership/applications/${id}/status`, {
@@ -177,14 +281,15 @@ export default function ManageMembersPage() {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [fetchAll, selectedDetail?.id, openDetail]);
 
-  const handleDeleteApplication = async () => {
+  const handleDeleteApplication = useCallback(async () => {
     if (!deleteTarget) return;
     setProcessing(true);
     try {
       await api.delete(`/admin/membership/applications/${deleteTarget.id}`);
       toast.success(`Deleted ${deleteTarget.serialNumber}`);
+      clearCachedData('membership_config');
       if (selectedDetail?.id === deleteTarget.id) setSelectedDetail(null);
       setDeleteTarget(null);
       fetchAll();
@@ -193,22 +298,23 @@ export default function ManageMembersPage() {
     } finally {
       setProcessing(false);
     }
-  };
+  }, [deleteTarget, selectedDetail?.id, fetchAll]);
 
-  const statCards = [
+  const statCards = useMemo(() => [
     { label: 'Total Applications', value: stats.totalMembers, icon: Users, color: '#123DAA', bg: '#EEF2FF' },
     { label: 'New Pending Apps', value: stats.newApplications, icon: UserPlus, color: '#D97706', bg: '#FEF3C7' },
     { label: 'Pending Payments', value: stats.pendingPayments, icon: Clock, color: '#F07818', bg: '#FFF7ED' },
     { label: 'Verified Payments', value: stats.verifiedPayments, icon: ShieldCheck, color: '#16A34A', bg: '#DCFCE7' },
     { label: 'Rejected Payments', value: stats.rejectedPayments, icon: XCircle, color: '#DC2626', bg: '#FEE2E2' },
     { label: 'Approved Members', value: stats.approvedMembers, icon: CheckCircle2, color: '#0284C7', bg: '#E0F2FE' },
-  ];
+  ], [stats]);
 
-  const openSettingsModal = async () => {
+  const openSettingsModal = useCallback(async () => {
     setSettingsOpen(true);
     try {
       const res = await api.get('/admin/membership/settings');
       if (res.data?.data) {
+        revokeQrBlob();
         setSettingsForm(res.data.data);
         setQrPreview(res.data.data.qrCodeUrl || '/tmssa-qr.png');
         setQrFile(null);
@@ -216,9 +322,9 @@ export default function ManageMembersPage() {
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to load QR & fee settings');
     }
-  };
+  }, [revokeQrBlob]);
 
-  const handleSaveSettings = async (e) => {
+  const handleSaveSettings = useCallback(async (e) => {
     e.preventDefault();
     setSavingSettings(true);
     try {
@@ -237,14 +343,16 @@ export default function ManageMembersPage() {
       }
 
       await api.put('/admin/membership/settings', fd);
+      clearCachedData('membership_config');
       toast.success('QR Code & Fee settings updated! Live on /membership');
+      revokeQrBlob();
       setSettingsOpen(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save settings');
     } finally {
       setSavingSettings(false);
     }
-  };
+  }, [settingsForm, qrFile, revokeQrBlob]);
 
   return (
     <div className="space-y-6">
@@ -370,90 +478,17 @@ export default function ManageMembersPage() {
                   </td>
                 </tr>
               ) : (
-                applications.map((app) => {
-                  const pay = app.payments?.[0] || {};
-                  return (
-                    <tr key={app.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 font-mono font-bold text-[#09246B]">
-                        {app.serialNumber}
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="font-bold text-gray-900">{app.applicantName}</p>
-                        <p className="text-[11px] text-gray-400">{app.shopName}</p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="font-mono font-semibold text-gray-800">{app.phone}</p>
-                        <p className="text-[11px] text-gray-400">{app.email}</p>
-                      </td>
-                      <td className="py-3 px-4 font-mono">
-                        {new Date(app.registrationDate || app.createdAt).toLocaleDateString('en-IN')}
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="font-mono font-bold text-gray-800">{pay.upiTransactionId || '—'}</p>
-                        <p className="text-[11px] text-gray-500">₹{pay.amount || 1200}</p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            PAYMENT_BADGE[pay.paymentStatus] || PAYMENT_BADGE.PENDING
-                          }`}
-                        >
-                          {pay.paymentStatus === 'PAYMENT_SUBMITTED' ? 'PENDING VERIFICATION' : pay.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            MEMBER_BADGE[app.membershipStatus] || MEMBER_BADGE.PENDING
-                          }`}
-                        >
-                          {app.membershipStatus}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1">
-                          <button
-                            onClick={() => openDetail(app.id)}
-                            title="View Full Application"
-                            className="p-1.5 rounded-lg text-[#123DAA] hover:bg-blue-50"
-                          >
-                            <Eye size={15} />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadPdf(app.serialNumber, 'application')}
-                            title="Download Application PDF"
-                            className="p-1.5 rounded-lg text-gray-700 hover:bg-gray-100"
-                          >
-                            <FileText size={15} />
-                          </button>
-                          {pay.paymentStatus !== 'VERIFIED' && (
-                            <button
-                              onClick={() => handlePaymentAction(app.id, 'VERIFIED')}
-                              className="px-2 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold"
-                            >
-                              Verify Pay
-                            </button>
-                          )}
-                          {pay.paymentStatus === 'VERIFIED' && app.membershipStatus !== 'APPROVED' && (
-                            <button
-                              onClick={() => handleMembershipAction(app.id, 'APPROVED')}
-                              className="px-2 py-1 rounded-lg bg-[#09246B] text-white text-[11px] font-semibold"
-                            >
-                              Approve
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setDeleteTarget(app)}
-                            title="Delete Application"
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                applications.map((app) => (
+                  <ApplicationRow
+                    key={app.id}
+                    app={app}
+                    onOpenDetail={openDetail}
+                    onDownloadPdf={handleDownloadPdf}
+                    onVerifyPayment={handlePaymentAction}
+                    onApproveMembership={handleMembershipAction}
+                    onRequestDelete={setDeleteTarget}
+                  />
+                ))
               )}
             </tbody>
           </table>
@@ -512,8 +547,10 @@ export default function ManageMembersPage() {
                   <div className="flex flex-col sm:flex-row gap-5 items-start">
                     {selectedDetail.documents?.find((d) => d.docType === 'PHOTO')?.fileUrl && (
                       <img
-                        src={selectedDetail.documents.find((d) => d.docType === 'PHOTO').fileUrl}
+                        src={optimizeImageUrl(selectedDetail.documents.find((d) => d.docType === 'PHOTO').fileUrl, { width: 400 })}
                         alt={selectedDetail.applicantName}
+                        loading="lazy"
+                        decoding="async"
                         className="w-28 h-36 rounded-2xl object-cover border-2 border-[#09246B] flex-shrink-0"
                       />
                     )}
@@ -560,8 +597,10 @@ export default function ManageMembersPage() {
                           className="block mt-2"
                         >
                           <img
-                            src={selectedDetail.payments[0].paymentScreenshotUrl}
+                            src={optimizeImageUrl(selectedDetail.payments[0].paymentScreenshotUrl, { width: 800 })}
                             alt="Payment Screenshot"
+                            loading="lazy"
+                            decoding="async"
                             className="max-h-40 rounded-xl border object-contain"
                           />
                         </a>
@@ -572,8 +611,10 @@ export default function ManageMembersPage() {
                       <p className="text-xs font-bold text-gray-700">Signature & PDFs</p>
                       {selectedDetail.documents?.find((d) => d.docType === 'SIGNATURE')?.fileUrl ? (
                         <img
-                          src={selectedDetail.documents.find((d) => d.docType === 'SIGNATURE').fileUrl}
+                          src={optimizeImageUrl(selectedDetail.documents.find((d) => d.docType === 'SIGNATURE').fileUrl, { width: 500 })}
                           alt="Signature"
+                          loading="lazy"
+                          decoding="async"
                           className="h-16 bg-white border rounded-xl p-2 object-contain"
                         />
                       ) : (
@@ -759,8 +800,11 @@ export default function ManageMembersPage() {
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
+                        revokeQrBlob();
+                        const blobUrl = URL.createObjectURL(f);
+                        qrObjectUrlRef.current = blobUrl;
                         setQrFile(f);
-                        setQrPreview(URL.createObjectURL(f));
+                        setQrPreview(blobUrl);
                       }}
                       className="hidden"
                     />

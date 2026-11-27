@@ -1,17 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   MapPin,
-  Users,
   MessageCircle,
   ArrowRight,
-  ShieldCheck,
   Smartphone,
   ShoppingBag,
   Wrench,
   Truck,
-  TrendingUp,
   BadgeCheck,
   CheckCircle2,
   Store,
@@ -20,6 +17,7 @@ import {
 } from 'lucide-react';
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
 import { TN_DISTRICTS } from '../../utils/districtsData';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 import api from '../../services/api';
 
 const HERO_SLIDES = [
@@ -28,27 +26,76 @@ const HERO_SLIDES = [
   { id: 3, image: '/hero/hero-3.jpg', alt: 'TMSSA Leader 3' }
 ];
 
-export default function HomePage() {
-  const { t, i18n } = useTranslation();
-  const isTa = i18n.language === 'ta';
-  const [districts, setDistricts] = useState(TN_DISTRICTS);
+const MOBILE_BUSINESS_POINTS = [
+  {
+    num: '01',
+    icon: Store,
+    titleEn: 'Statewide Mobile Retail & Dealer Directory',
+    titleTa: 'மாநில அளவிலான மொபைல் டீலர் அடைவு',
+    descEn: 'Unified directory cataloging verified retail showrooms, wholesale stockists, and authorized dealers across every taluk in all 38 districts.',
+    descTa: 'தமிழ்நாட்டின் 38 மாவட்டங்களிலும் உள்ள சரிபார்க்கப்பட்ட சில்லறை ஷோரூம்கள், மொத்த விற்பனையாளர்கள் மற்றும் டீலர்களின் முழுமையான அடைவு.'
+  },
+  {
+    num: '02',
+    icon: ShoppingBag,
+    titleEn: 'Direct Brand & Wholesale Pricing Network',
+    titleTa: 'நேரடி பிராண்ட் & மொத்த விலை சலுகைகள்',
+    descEn: 'Connect directly with primary distributors for high-margin deals on Android smartphones, iPhones, smartwatches, and bulk accessories.',
+    descTa: 'முன்னணி ஸ்மார்ட்போன் பிராண்டுகள் மற்றும் மொத்த உதிரிபாகங்கள் மீது நேரடி டீலர் மொத்த விலை மற்றும் கூடுதல் லாப சலுகைகள்.'
+  },
+  {
+    num: '03',
+    icon: Wrench,
+    titleEn: '100% Genuine Spare Parts & Display Supply',
+    titleTa: 'அசல் உதிரிபாகங்கள் & டிஸ்பிளே விநியோகம்',
+    descEn: 'Fast procurement channel for original touch screens (Folder/OG Displays), batteries, IC chips, and technician service equipment.',
+    descTa: 'அனைத்து மாடல் போன்களுக்கான அசல் டிஸ்பிளே, பேட்டரி, மதர்போர்ட் பாகங்கள் மற்றும் பழுது நீக்கும் கருவிகள் உடனுக்குடன் பெறலாம்.'
+  },
+  {
+    num: '04',
+    icon: MessageCircle,
+    titleEn: '38 District B2B WhatsApp Trade Groups',
+    titleTa: '38 மாவட்ட B2B வாட்ஸ்அப் வர்த்தக குழுக்கள்',
+    descEn: 'Instant daily broadcast of price drops, flash sale allocations, new model arrivals, and inter-dealer stock exchange within your district.',
+    descTa: 'உங்கள் மாவட்டத்திற்குள் புதிய மாடல்கள் வருகை, தினசரி விலை மாற்றங்கள் மற்றும் ஸ்டாக் பரிமாற்றங்களுக்கான சிறப்பு வாட்ஸ்அப் குழுக்கள்.'
+  },
+  {
+    num: '05',
+    icon: Truck,
+    titleEn: 'Inter-District Express Delivery & Bus Logistics',
+    titleTa: 'மாவட்டங்களுக்கிடையேயான விரைவு பார்சல் சேவை',
+    descEn: 'Rapid courier and parcel tie-ups connecting Chennai, Coimbatore, Madurai, Trichy, and Salem to all 38 district centers within 12-24 hours.',
+    descTa: 'சென்னை, கோவை, மதுரை போன்ற முக்கிய நகரங்களிலிருந்து அனைத்து 38 மாவட்ட மையங்களுக்கும் ஒரே நாளில் பார்சல் சென்றடையும் விரைவு சேவை.'
+  },
+  {
+    num: '06',
+    icon: BadgeCheck,
+    titleEn: 'Verified Merchant Membership & Trade Security',
+    titleTa: 'அங்கீகரிக்கப்பட்ட வணிகர் உறுப்பினர் & பாதுகாப்பு',
+    descEn: 'Official digital ID card, store verification badge, dealer warranty dispute mediation, and business protection for mobile shop owners.',
+    descTa: 'அங்கீகரிக்கப்பட்ட டிஜிட்டல் உறுப்பினர் அட்டை, கடை சரிபார்ப்பு பேட்ஜ் மற்றும் வர்த்தக தகராறுகளுக்கான சட்டரீதியான உதவி பாதுகாப்பு.'
+  }
+];
 
-  // Hero carousel state
-  const [currentSlide, setCurrentSlide] = useState(0);
+function useIsDesktopLg() {
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 992px)').matches : true
+  );
 
   useEffect(() => {
-    api.get('/districts')
-      .then((res) => {
-        if (res.data?.data?.length > 0) {
-          setDistricts(res.data.data);
-        }
-      })
-      .catch(() => {
-        setDistricts(TN_DISTRICTS);
-      });
+    const mq = window.matchMedia('(min-width: 992px)');
+    const onChange = (e) => setIsDesktop(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // Continuous auto-rotation every 5 seconds without stopping on hover
+  return isDesktop;
+}
+
+// Isolated HeroCarousel prevents 5s slide timer from re-rendering the entire HomePage
+const HeroCarousel = memo(function HeroCarousel({ extraClass = '' }) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
@@ -56,15 +103,15 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-  };
+  }, []);
 
-  const renderCarouselBox = (extraClass = '') => (
+  return (
     <div className={`relative flex flex-col items-center w-full ${extraClass}`}>
       <div className="w-full max-w-[320px] xs:max-w-[350px] sm:max-w-[420px] lg:max-w-[460px] relative rounded-2xl sm:rounded-3xl p-2.5 sm:p-3.5 bg-gradient-to-b from-white/15 to-white/5 border border-white/20 backdrop-blur-md shadow-2xl overflow-hidden group">
         <div
@@ -91,6 +138,8 @@ export default function HomePage() {
                 alt={slide.alt}
                 className="h-full w-full object-contain filter drop-shadow-md select-none rounded-lg sm:rounded-xl"
                 loading={idx === 0 ? 'eager' : 'lazy'}
+                fetchPriority={idx === 0 ? 'high' : 'low'}
+                decoding="async"
               />
             </div>
           ))}
@@ -129,64 +178,61 @@ export default function HomePage() {
       </div>
     </div>
   );
+});
 
-  const mobileBusinessPoints = [
-    {
-      num: '01',
-      icon: Store,
-      titleEn: 'Statewide Mobile Retail & Dealer Directory',
-      titleTa: 'மாநில அளவிலான மொபைல் டீலர் அடைவு',
-      descEn: 'Unified directory cataloging verified retail showrooms, wholesale stockists, and authorized dealers across every taluk in all 38 districts.',
-      descTa: 'தமிழ்நாட்டின் 38 மாவட்டங்களிலும் உள்ள சரிபார்க்கப்பட்ட சில்லறை ஷோரூம்கள், மொத்த விற்பனையாளர்கள் மற்றும் டீலர்களின் முழுமையான அடைவு.'
-    },
-    {
-      num: '02',
-      icon: ShoppingBag,
-      titleEn: 'Direct Brand & Wholesale Pricing Network',
-      titleTa: 'நேரடி பிராண்ட் & மொத்த விலை சலுகைகள்',
-      descEn: 'Connect directly with primary distributors for high-margin deals on Android smartphones, iPhones, smartwatches, and bulk accessories.',
-      descTa: 'முன்னணி ஸ்மார்ட்போன் பிராண்டுகள் மற்றும் மொத்த உதிரிபாகங்கள் மீது நேரடி டீலர் மொத்த விலை மற்றும் கூடுதல் லாப சலுகைகள்.'
-    },
-    {
-      num: '03',
-      icon: Wrench,
-      titleEn: '100% Genuine Spare Parts & Display Supply',
-      titleTa: 'அசல் உதிரிபாகங்கள் & டிஸ்பிளே விநியோகம்',
-      descEn: 'Fast procurement channel for original touch screens (Folder/OG Displays), batteries, IC chips, and technician service equipment.',
-      descTa: 'அனைத்து மாடல் போன்களுக்கான அசல் டிஸ்பிளே, பேட்டரி, மதர்போர்ட் பாகங்கள் மற்றும் பழுது நீக்கும் கருவிகள் உடனுக்குடன் பெறலாம்.'
-    },
-    {
-      num: '04',
-      icon: MessageCircle,
-      titleEn: '38 District B2B WhatsApp Trade Groups',
-      titleTa: '38 மாவட்ட B2B வாட்ஸ்அப் வர்த்தக குழுக்கள்',
-      descEn: 'Instant daily broadcast of price drops, flash sale allocations, new model arrivals, and inter-dealer stock exchange within your district.',
-      descTa: 'உங்கள் மாவட்டத்திற்குள் புதிய மாடல்கள் வருகை, தினசரி விலை மாற்றங்கள் மற்றும் ஸ்டாக் பரிமாற்றங்களுக்கான சிறப்பு வாட்ஸ்அப் குழுக்கள்.'
-    },
-    {
-      num: '05',
-      icon: Truck,
-      titleEn: 'Inter-District Express Delivery & Bus Logistics',
-      titleTa: 'மாவட்டங்களுக்கிடையேயான விரைவு பார்சல் சேவை',
-      descEn: 'Rapid courier and parcel tie-ups connecting Chennai, Coimbatore, Madurai, Trichy, and Salem to all 38 district centers within 12-24 hours.',
-      descTa: 'சென்னை, கோவை, மதுரை போன்ற முக்கிய நகரங்களிலிருந்து அனைத்து 38 மாவட்ட மையங்களுக்கும் ஒரே நாளில் பார்சல் சென்றடையும் விரைவு சேவை.'
-    },
-    {
-      num: '06',
-      icon: BadgeCheck,
-      titleEn: 'Verified Merchant Membership & Trade Security',
-      titleTa: 'அங்கீகரிக்கப்பட்ட வணிகர் உறுப்பினர் & பாதுகாப்பு',
-      descEn: 'Official digital ID card, store verification badge, dealer warranty dispute mediation, and business protection for mobile shop owners.',
-      descTa: 'அங்கீகரிக்கப்பட்ட டிஜிட்டல் உறுப்பினர் அட்டை, கடை சரிபார்ப்பு பேட்ஜ் மற்றும் வர்த்தக தகராறுகளுக்கான சட்டரீதியான உதவி பாதுகாப்பு.'
-    }
-  ];
+export default function HomePage() {
+  const { t, i18n } = useTranslation();
+  const isTa = i18n.language === 'ta';
+  const isDesktopLg = useIsDesktopLg();
+
+  const initialDistricts = useMemo(() => getCachedData('districts') || TN_DISTRICTS, []);
+  const [districts, setDistricts] = useState(initialDistricts);
+
+  useEffect(() => {
+    let active = true;
+    api.get('/districts')
+      .then((res) => {
+        if (!active) return;
+        if (res.data?.data?.length > 0) {
+          setDistricts(res.data.data);
+          setCachedData('districts', res.data.data);
+        }
+      })
+      .catch(() => {
+        if (active && !initialDistricts?.length) setDistricts(TN_DISTRICTS);
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialDistricts]);
+
+  const heroBadges = useMemo(
+    () => [
+      { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#60a5fa' },
+      { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#4ade80' },
+      { value: '38 B2B', label: isTa ? 'வாட்ஸ்அப்' : 'WhatsApp', color: '#fb923c' },
+      { value: '100%', label: isTa ? 'சரிபார்க்கப்பட்டது' : 'Verified', color: '#ffffff' },
+    ],
+    [isTa]
+  );
+
+  const mainStats = useMemo(
+    () => [
+      { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#123DAA' },
+      { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#123DAA' },
+      { value: '38', label: isTa ? 'வாட்ஸ்அப் குழுக்கள்' : 'WhatsApp Groups', color: '#16A34A' },
+      { value: '100%', label: isTa ? 'டிஜிட்டல் ஒருங்கிணைப்பு' : 'Connected', color: '#2463D4' },
+    ],
+    [isTa]
+  );
+
+  const featuredDistricts = useMemo(() => districts.slice(0, 8), [districts]);
 
   return (
     <div className="space-y-12 sm:space-y-16 pb-16" style={{ backgroundColor: '#F4F7FC' }}>
 
       {/* ══════════════════════════════════════════════════════════════════
-          HERO SECTION WITH 5-IMAGE AUTO-ROTATING CAROUSEL (5 SECONDS)
-          Official Palette: Dark Navy Blue (#09246B), Royal Blue (#123DAA), Green (#16A34A)
+          HERO SECTION
       ══════════════════════════════════════════════════════════════════ */}
       <section
         className="relative text-white overflow-hidden shadow-xl"
@@ -194,7 +240,6 @@ export default function HomePage() {
           background: 'linear-gradient(135deg, #06194b 0%, #09246B 38%, #123DAA 72%, #08432a 100%)'
         }}
       >
-        {/* Subtle grid pattern & glowing green/blue accents */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#123DAA]/30 blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-[#16A34A]/25 blur-3xl pointer-events-none"></div>
@@ -202,14 +247,17 @@ export default function HomePage() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-14 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
 
-            {/* Left Column (7 Cols on Desktop, Crisp Left-Aligned Text on Mobile) */}
+            {/* Left Column */}
             <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-left">
-              
+
               {/* Association Badge with Logo */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white shadow-sm">
                 <img
                   src="/logo.jpg"
                   alt="TMSSA Logo"
+                  width={20}
+                  height={20}
+                  decoding="async"
                   className="h-5 w-5 rounded-full object-cover border border-[#F07818]"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
@@ -224,7 +272,7 @@ export default function HomePage() {
                 </span>
               </div>
 
-              {/* Main Headline (Clean, Left-Aligned, Perfectly Structured) */}
+              {/* Main Headline */}
               <div className="space-y-1.5">
                 <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-normal leading-[1.3] text-white">
                   தமிழ்நாடு மொபைல் சேல்ஸ் அண்டு சர்வீஸ் அசோசியேஷன்
@@ -237,10 +285,12 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Mobile Carousel - Visible ONLY on screens < lg (Directly in user focus!) */}
-              <div className="lg:hidden my-2">
-                {renderCarouselBox('mx-auto')}
-              </div>
+              {/* Mobile Carousel — mounts ONLY below 992px */}
+              {!isDesktopLg && (
+                <div className="my-2">
+                  <HeroCarousel extraClass="mx-auto" />
+                </div>
+              )}
 
               {/* President Message Executive Card */}
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 sm:p-5 border-l-4 border-[#F07818] border-t border-r border-b border-white/15 shadow-sm text-left">
@@ -259,12 +309,7 @@ export default function HomePage() {
 
               {/* Association Quick Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-1">
-                {[
-                  { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#60a5fa' },
-                  { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#4ade80' },
-                  { value: '38 B2B', label: isTa ? 'வாட்ஸ்அப்' : 'WhatsApp', color: '#fb923c' },
-                  { value: '100%', label: isTa ? 'சரிபார்க்கப்பட்டது' : 'Verified', color: '#ffffff' },
-                ].map((item) => (
+                {heroBadges.map((item) => (
                   <div
                     key={item.label}
                     className="bg-white/10 backdrop-blur-md rounded-xl p-2 sm:p-2.5 border border-white/15 text-center shadow-xs"
@@ -283,10 +328,7 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-start gap-2.5 sm:gap-3 pt-1">
                 <Link
                   to="/membership"
-                  className="px-5 sm:px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm text-white"
-                  style={{ backgroundColor: '#F07818' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4660f')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F07818')}
+                  className="px-5 sm:px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm text-white bg-[#F07818] hover:bg-[#d4660f]"
                 >
                   <span>{t('home.joinNow', 'Join Now / உறுப்பினர் பதிவு')}</span>
                   <ArrowRight size={15} />
@@ -294,10 +336,7 @@ export default function HomePage() {
 
                 <Link
                   to="/whatsapp-groups"
-                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm"
-                  style={{ backgroundColor: '#16A34A' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
+                  className="px-5 sm:px-6 py-3 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm bg-[#16A34A] hover:bg-[#15803d]"
                 >
                   <MessageCircle size={15} />
                   <span>WhatsApp Groups</span>
@@ -314,10 +353,12 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right Column: Desktop Carousel (Visible ONLY on lg+) */}
-            <div className="hidden lg:flex lg:col-span-5 relative flex-col items-center w-full">
-              {renderCarouselBox()}
-            </div>
+            {/* Right Column: Desktop Carousel — mounts ONLY at >= 992px */}
+            {isDesktopLg && (
+              <div className="flex lg:col-span-5 relative flex-col items-center w-full">
+                <HeroCarousel />
+              </div>
+            )}
 
           </div>
         </div>
@@ -326,12 +367,7 @@ export default function HomePage() {
       {/* ── Stats ──────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
-          {[
-            { value: '38', label: isTa ? 'மாவட்டங்கள்' : 'Districts', color: '#123DAA' },
-            { value: '10,000+', label: isTa ? 'உறுப்பினர்கள்' : 'Members', color: '#123DAA' },
-            { value: '38', label: isTa ? 'வாட்ஸ்அப் குழுக்கள்' : 'WhatsApp Groups', color: '#16A34A' },
-            { value: '100%', label: isTa ? 'டிஜிட்டல் ஒருங்கிணைப்பு' : 'Connected', color: '#2463D4' },
-          ].map((stat) => (
+          {mainStats.map((stat) => (
             <div key={stat.label} className="bg-white p-6 rounded-2xl shadow-sm border" style={{ borderColor: '#E2E8F0' }}>
               <div className="font-extrabold text-3xl sm:text-4xl mb-1" style={{ color: stat.color }}>{stat.value}</div>
               <div className="text-xs sm:text-sm font-medium" style={{ color: '#64748B' }}>{stat.label}</div>
@@ -378,15 +414,12 @@ export default function HomePage() {
 
           {/* 6 Key Points Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mobileBusinessPoints.map((point) => {
+            {MOBILE_BUSINESS_POINTS.map((point) => {
               const Icon = point.icon;
               return (
                 <div
                   key={point.num}
-                  className="bg-white rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-default"
-                  style={{ borderColor: '#E2E8F0' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#123DAA'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                  className="bg-white rounded-2xl p-6 border border-[#E2E8F0] hover:border-[#123DAA] shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-default"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -439,10 +472,7 @@ export default function HomePage() {
             </div>
             <Link
               to="/membership"
-              className="px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap shadow transition"
-              style={{ backgroundColor: '#F07818', color: '#fff' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#d4660f'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F07818'}
+              className="px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap shadow transition bg-[#F07818] hover:bg-[#d4660f] text-white"
             >
               {isTa ? 'இப்போதே பதிவு செய்க' : 'Register Store Now'}
             </Link>
@@ -473,7 +503,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {districts.slice(0, 8).map((d) => (
+          {featuredDistricts.map((d) => (
             <DistrictCard key={d.id || d.slug} district={d} />
           ))}
         </div>
@@ -497,10 +527,7 @@ export default function HomePage() {
           </div>
           <Link
             to="/membership"
-            className="font-bold px-8 py-3.5 rounded-xl shadow transition text-sm sm:text-base whitespace-nowrap"
-            style={{ backgroundColor: '#F07818', color: '#fff' }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#d4660f'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F07818'}
+            className="font-bold px-8 py-3.5 rounded-xl shadow transition text-sm sm:text-base whitespace-nowrap bg-[#F07818] hover:bg-[#d4660f] text-white"
           >
             {isTa ? 'உறுப்பினர் பதிவு செய்க' : 'Register for Membership'}
           </Link>

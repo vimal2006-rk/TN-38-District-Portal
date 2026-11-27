@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getTranslations = async (req, res, next) => {
   try {
@@ -8,14 +9,26 @@ const getTranslations = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Lang must be "en" or "ta"' });
     }
 
-    const translations = await prisma.translation.findMany();
+    const cacheKey = `translations:${lang}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.status(200).json(cached);
+    }
 
-    const result = {};
-    translations.forEach((t) => {
-      result[t.key] = lang === 'en' ? t.valueEn : t.valueTa;
+    const translations = await prisma.translation.findMany({
+      select: { key: true, valueEn: true, valueTa: true },
     });
 
-    return res.status(200).json({ success: true, lang, data: result });
+    const result = {};
+    for (const t of translations) {
+      result[t.key] = lang === 'en' ? t.valueEn : t.valueTa;
+    }
+
+    const payload = { success: true, lang, data: result };
+    setCache(cacheKey, payload, 60000);
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -35,6 +48,7 @@ const updateTranslation = async (req, res, next) => {
       },
       create: { key, valueEn: valueEn || '', valueTa: valueTa || '', section },
     });
+    invalidateCache('translations:');
 
     return res.status(200).json({ success: true, data: translation });
   } catch (err) {

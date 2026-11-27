@@ -15,13 +15,15 @@ export default defineConfig({
   build: {
     target: 'es2020',
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 800,
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           'vendor-icons': ['lucide-react'],
+          'vendor-net': ['axios', 'react-hot-toast'],
         },
       },
     },

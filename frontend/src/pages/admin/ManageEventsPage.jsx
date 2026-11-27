@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { clearCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import {
   Calendar,
   Plus,
@@ -47,6 +49,16 @@ export default function ManageEventsPage() {
   const [imagePreview, setImagePreview] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const previewBlobRef = useRef(null);
+
+  const revokePreviewBlob = useCallback(() => {
+    if (previewBlobRef.current) {
+      URL.revokeObjectURL(previewBlobRef.current);
+      previewBlobRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => revokePreviewBlob, [revokePreviewBlob]);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -68,15 +80,17 @@ export default function ManageEventsPage() {
     fetchEvents();
   }, [fetchEvents]);
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
+    revokePreviewBlob();
     setEditingId(null);
     setForm(EMPTY_EVENT);
     setImageFile(null);
     setImagePreview('');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const openEditModal = (ev) => {
+  const openEditModal = useCallback((ev) => {
+    revokePreviewBlob();
     setEditingId(ev.id);
     setForm({
       titleEn: ev.titleEn || '',
@@ -93,20 +107,23 @@ export default function ManageEventsPage() {
     setImageFile(null);
     setImagePreview(ev.imageUrl || '');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Banner image must be smaller than 10MB');
       return;
     }
+    revokePreviewBlob();
+    const url = URL.createObjectURL(file);
+    previewBlobRef.current = url;
     setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
+    setImagePreview(url);
+  }, [revokePreviewBlob]);
 
-  const handleSave = async (publishOverride = null) => {
+  const handleSave = useCallback(async (publishOverride = null) => {
     if (!form.titleEn.trim() && !form.titleTa.trim()) {
       toast.error('Please enter an event title.');
       return;
@@ -138,12 +155,15 @@ export default function ManageEventsPage() {
 
       if (editingId) {
         await api.put(`/admin/events/${editingId}`, fd);
+        clearCachedData(`event_${editingId}`);
         toast.success('Event updated successfully!');
       } else {
         await api.post('/admin/events', fd);
         toast.success(isPub ? 'Event published!' : 'Event saved as draft!');
       }
 
+      clearCachedData('events');
+      revokePreviewBlob();
       setModalOpen(false);
       fetchEvents();
     } catch (err) {
@@ -151,29 +171,33 @@ export default function ManageEventsPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, imageFile, editingId, fetchEvents, revokePreviewBlob]);
 
-  const handleTogglePublish = async (ev) => {
+  const handleTogglePublish = useCallback(async (ev) => {
     try {
       await api.patch(`/admin/events/${ev.id}/publish`);
+      clearCachedData('events');
+      clearCachedData(`event_${ev.id}`);
       toast.success(ev.isPublished ? 'Event unpublished' : 'Event published!');
       fetchEvents();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update status');
     }
-  };
+  }, [fetchEvents]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/admin/events/${deleteTarget.id}`);
+      clearCachedData('events');
+      clearCachedData(`event_${deleteTarget.id}`);
       toast.success('Event deleted');
       setDeleteTarget(null);
       fetchEvents();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete event');
     }
-  };
+  }, [deleteTarget, fetchEvents]);
 
   return (
     <div className="space-y-6">
@@ -273,8 +297,10 @@ export default function ManageEventsPage() {
                       <div className="flex items-center gap-3">
                         {ev.imageUrl ? (
                           <img
-                            src={ev.imageUrl}
+                            src={optimizeImageUrl(ev.imageUrl, { width: 160 })}
                             alt={ev.titleEn}
+                            loading="lazy"
+                            decoding="async"
                             className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
                           />
                         ) : (

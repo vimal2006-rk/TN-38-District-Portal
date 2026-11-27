@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ShieldCheck, Users, Search, HeartHandshake, Scale, Award } from 'lucide-react';
 
@@ -276,11 +276,59 @@ const PERSONAL_PUBLIC_TERMS = [
   },
 ];
 
+const LeaderCard = memo(function LeaderCard({ d, isTa }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-[#F8FAFC] p-5 space-y-3 hover:shadow-md transition">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-2.5">
+        <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#09246B] text-white">
+          #{d.no}
+        </span>
+        <h3 className="text-sm sm:text-base font-extrabold text-[#09246B] text-right">
+          {isTa ? d.districtTa : d.districtEn}
+        </h3>
+      </div>
+
+      <div className="space-y-2 text-xs leading-relaxed">
+        <div>
+          <span className="font-bold text-[#F07818]">
+            {isTa ? 'தலைவர்: ' : 'President: '}
+          </span>
+          <span className="text-gray-800 font-medium">
+            {isTa ? d.presidentTa : d.presidentEn}
+          </span>
+        </div>
+        <div>
+          <span className="font-bold text-[#123DAA]">
+            {isTa ? 'செயலாளர்: ' : 'Secretary: '}
+          </span>
+          <span className="text-gray-800 font-medium">
+            {isTa ? d.secretaryTa : d.secretaryEn}
+          </span>
+        </div>
+        <div>
+          <span className="font-bold text-[#16A34A]">
+            {isTa ? 'பொருளாளர்: ' : 'Treasurer: '}
+          </span>
+          <span className="text-gray-800 font-medium">
+            {isTa ? d.treasurerTa : d.treasurerEn}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function TermsAndConditionsPage() {
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
   const [activeTab, setActiveTab] = useState('terms');
   const [search, setSearch] = useState('');
+
+  const handleTabTerms = useCallback(() => setActiveTab('terms'), []);
+  const handleTabLeaders = useCallback(() => setActiveTab('leaders'), []);
+  const handleLangTa = useCallback(() => i18n.changeLanguage('ta'), [i18n]);
+  const handleLangEn = useCallback(() => i18n.changeLanguage('en'), [i18n]);
+  const handleSearchChange = useCallback((e) => setSearch(e.target.value), []);
 
   const filteredDistricts = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -323,7 +371,7 @@ export default function TermsAndConditionsPage() {
           <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white border border-gray-200 shadow-xs mt-2">
             <button
               type="button"
-              onClick={() => i18n.changeLanguage('ta')}
+              onClick={handleLangTa}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
                 isTa ? 'bg-[#09246B] text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -332,7 +380,7 @@ export default function TermsAndConditionsPage() {
             </button>
             <button
               type="button"
-              onClick={() => i18n.changeLanguage('en')}
+              onClick={handleLangEn}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
                 !isTa ? 'bg-[#09246B] text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -344,7 +392,7 @@ export default function TermsAndConditionsPage() {
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-3">
             <button
               type="button"
-              onClick={() => setActiveTab('terms')}
+              onClick={handleTabTerms}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition shadow-xs border ${
                 activeTab === 'terms'
                   ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
@@ -356,7 +404,7 @@ export default function TermsAndConditionsPage() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('leaders')}
+              onClick={handleTabLeaders}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition shadow-xs border ${
                 activeTab === 'leaders'
                   ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
@@ -457,7 +505,7 @@ export default function TermsAndConditionsPage() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 placeholder={isTa ? 'மாவட்டம் / பெயர் தேட...' : 'Search district or leader name...'}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#09246B]"
               />
@@ -466,46 +514,7 @@ export default function TermsAndConditionsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredDistricts.map((d) => (
-              <div
-                key={d.no}
-                className="rounded-2xl border border-gray-200 bg-[#F8FAFC] p-5 space-y-3 hover:shadow-md transition"
-              >
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2.5">
-                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#09246B] text-white">
-                    #{d.no}
-                  </span>
-                  <h3 className="text-sm sm:text-base font-extrabold text-[#09246B] text-right">
-                    {isTa ? d.districtTa : d.districtEn}
-                  </h3>
-                </div>
-
-                <div className="space-y-2 text-xs leading-relaxed">
-                  <div>
-                    <span className="font-bold text-[#F07818]">
-                      {isTa ? 'தலைவர்: ' : 'President: '}
-                    </span>
-                    <span className="text-gray-800 font-medium">
-                      {isTa ? d.presidentTa : d.presidentEn}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#123DAA]">
-                      {isTa ? 'செயலாளர்: ' : 'Secretary: '}
-                    </span>
-                    <span className="text-gray-800 font-medium">
-                      {isTa ? d.secretaryTa : d.secretaryEn}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#16A34A]">
-                      {isTa ? 'பொருளாளர்: ' : 'Treasurer: '}
-                    </span>
-                    <span className="text-gray-800 font-medium">
-                      {isTa ? d.treasurerTa : d.treasurerEn}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <LeaderCard key={d.no} d={d} isTa={isTa} />
             ))}
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import {
@@ -14,10 +14,19 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
+import { getCachedData, setCachedData, clearCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import api from '../../services/api';
 import { removeSignatureBackground } from '../../utils/signatureProcessor';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const STEPPER_STEPS = [
+  { step: 1, label: '1. Applicant Details' },
+  { step: 2, label: '2. Photo & Signature' },
+  { step: 3, label: '3. Scan & Pay + PDF' },
+];
+const REGISTRATION_DATE_DISPLAY = new Date().toLocaleDateString('en-IN');
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const isValidAadhaarClient = (num) => {
   const digits = String(num).replace(/\D/g, '');
@@ -62,18 +71,24 @@ export default function MembershipPage() {
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
 
-  const [config, setConfig] = useState({
-    associationNameEn: 'TAMILNADU MOBILE SALES AND SERVICE ASSOCIATION',
-    associationNameTa: 'தமிழ்நாடு மொபைல் சேல்ஸ் மற்றும் சர்வீஸ் அசோசியேசன்',
-    regNumber: 'Regd : 23/2025',
-    address: '234 Meenakshi Bazar, Scott Road, Madurai - 625001',
-    helpline1: '+91 99447 73668',
-    helpline2: '+91 97879 75782',
-    annualFee: 1200,
-    halfYearlyFee: 600,
-    qrCodeUrl: '/tmssa-qr.png',
-    nextSerialPreview: `TNMSSA-${new Date().getFullYear()}-0001`,
-  });
+  const initialConfig = useMemo(() => {
+    const cached = getCachedData('membership_config');
+    return {
+      associationNameEn: 'TAMILNADU MOBILE SALES AND SERVICE ASSOCIATION',
+      associationNameTa: 'தமிழ்நாடு மொபைல் சேல்ஸ் மற்றும் சர்வீஸ் அசோசியேசன்',
+      regNumber: 'Regd : 23/2025',
+      address: '234 Meenakshi Bazar, Scott Road, Madurai - 625001',
+      helpline1: '+91 99447 73668',
+      helpline2: '+91 97879 75782',
+      annualFee: 1200,
+      halfYearlyFee: 600,
+      qrCodeUrl: '/tmssa-qr.png',
+      nextSerialPreview: `TNMSSA-${new Date().getFullYear()}-0001`,
+      ...cached,
+    };
+  }, []);
+
+  const [config, setConfig] = useState(initialConfig);
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [showAadhaar, setShowAadhaar] = useState(false);
@@ -89,13 +104,39 @@ export default function MembershipPage() {
   const [submittedData, setSubmittedData] = useState(null);
   const [errors, setErrors] = useState({});
 
+  const previewUrlsRef = useRef({ photo: '', signature: '', screenshot: '' });
+
+  const revokePreviewUrl = useCallback((key) => {
+    const current = previewUrlsRef.current[key];
+    if (current) {
+      URL.revokeObjectURL(current);
+      previewUrlsRef.current[key] = '';
+    }
+  }, []);
+
   useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(previewUrlsRef.current.photo);
+      URL.revokeObjectURL(previewUrlsRef.current.signature);
+      URL.revokeObjectURL(previewUrlsRef.current.screenshot);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     api
       .get('/membership/config')
       .then((res) => {
-        if (res.data?.data) setConfig((prev) => ({ ...prev, ...res.data.data }));
+        if (!active) return;
+        if (res.data?.data) {
+          setConfig((prev) => ({ ...prev, ...res.data.data }));
+          setCachedData('membership_config', res.data.data);
+        }
       })
       .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
   const calculatedAge = useMemo(() => {
@@ -116,7 +157,7 @@ export default function MembershipPage() {
     return 1;
   }, [submittedData, photoFile, form.applicantName, form.phone, form.shopName]);
 
-  const handleImageSelect = async (e, type) => {
+  const handleImageSelect = useCallback(async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
@@ -128,26 +169,36 @@ export default function MembershipPage() {
       return;
     }
     if (type === 'photo') {
+      revokePreviewUrl('photo');
+      const url = URL.createObjectURL(file);
+      previewUrlsRef.current.photo = url;
       setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+      setPhotoPreview(url);
       setErrors((prev) => ({ ...prev, photo: undefined }));
     } else if (type === 'signature') {
+      revokePreviewUrl('signature');
       try {
         const { file: cleanSigFile, previewUrl } = await removeSignatureBackground(file);
+        previewUrlsRef.current.signature = previewUrl;
         setSigFile(cleanSigFile);
         setSigPreview(previewUrl);
         toast.success('Signature background removed automatically!');
       } catch {
+        const url = URL.createObjectURL(file);
+        previewUrlsRef.current.signature = url;
         setSigFile(file);
-        setSigPreview(URL.createObjectURL(file));
+        setSigPreview(url);
       }
     } else if (type === 'screenshot') {
+      revokePreviewUrl('screenshot');
+      const url = URL.createObjectURL(file);
+      previewUrlsRef.current.screenshot = url;
       setScreenshotFile(file);
-      setScreenshotPreview(URL.createObjectURL(file));
+      setScreenshotPreview(url);
     }
-  };
+  }, [revokePreviewUrl]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const e = {};
     if (!form.applicantName.trim()) e.applicantName = 'Applicant Name is required';
     if (!form.fatherName.trim()) e.fatherName = "Father's Name is required";
@@ -189,9 +240,9 @@ export default function MembershipPage() {
 
     setErrors(e);
     return Object.keys(e).length === 0;
-  };
+  }, [form, calculatedAge, photoFile]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!validateForm()) {
       toast.error(isTa ? 'தயவுசெய்து சிவப்பு நிறப் புலங்களைச் சரிபார்க்கவும்' : 'Please fix the highlighted errors before submitting.');
@@ -209,6 +260,7 @@ export default function MembershipPage() {
       if (screenshotFile) fd.append('paymentScreenshot', screenshotFile);
 
       const res = await api.post('/membership/register', fd);
+      clearCachedData('membership_config');
       setSubmittedData(res.data?.data);
       toast.success(isTa ? 'விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது!' : 'Membership application submitted!');
     } catch (err) {
@@ -216,10 +268,24 @@ export default function MembershipPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [validateForm, isTa, form, photoFile, sigFile, screenshotFile]);
+
+  const handleResetForm = useCallback(() => {
+    revokePreviewUrl('photo');
+    revokePreviewUrl('signature');
+    revokePreviewUrl('screenshot');
+    setSubmittedData(null);
+    setForm(INITIAL_FORM);
+    setPhotoFile(null);
+    setPhotoPreview('');
+    setSigFile(null);
+    setSigPreview('');
+    setScreenshotFile(null);
+    setScreenshotPreview('');
+  }, [revokePreviewUrl]);
 
   const selectedAmount = form.planType === 'HALF_YEARLY' ? config.halfYearlyFee : config.annualFee;
-  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+  const apiBase = API_BASE;
 
   return (
     <div className="min-h-screen py-8 sm:py-12" style={{ backgroundColor: '#F4F7FC' }}>
@@ -233,6 +299,9 @@ export default function MembershipPage() {
             <img
               src="/logo.jpg"
               alt="TNMSSA Logo"
+              width={80}
+              height={80}
+              decoding="async"
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-[#09246B] shadow-sm flex-shrink-0"
             />
             <div className="text-center sm:text-left flex-1">
@@ -251,11 +320,7 @@ export default function MembershipPage() {
 
           {/* Progress Stepper */}
           <div className="grid grid-cols-3 text-center text-[11px] sm:text-xs font-bold bg-gray-50 border-b border-gray-200">
-            {[
-              { step: 1, label: '1. Applicant Details' },
-              { step: 2, label: '2. Photo & Signature' },
-              { step: 3, label: '3. Scan & Pay + PDF' },
-            ].map((s) => (
+            {STEPPER_STEPS.map((s) => (
               <div
                 key={s.step}
                 className={`py-2.5 px-2 transition ${
@@ -334,16 +399,7 @@ export default function MembershipPage() {
               </div>
 
               <button
-                onClick={() => {
-                  setSubmittedData(null);
-                  setForm(INITIAL_FORM);
-                  setPhotoFile(null);
-                  setPhotoPreview('');
-                  setSigFile(null);
-                  setSigPreview('');
-                  setScreenshotFile(null);
-                  setScreenshotPreview('');
-                }}
+                onClick={handleResetForm}
                 className="text-xs font-semibold text-[#123DAA] hover:underline"
               >
                 Submit Another Application
@@ -362,7 +418,7 @@ export default function MembershipPage() {
                 <div>
                   <span className="text-gray-500 font-semibold">Registration Date: </span>
                   <span className="font-mono font-bold text-gray-800">
-                    {new Date().toLocaleDateString('en-IN')}
+                    {REGISTRATION_DATE_DISPLAY}
                   </span>
                 </div>
               </div>
@@ -721,8 +777,10 @@ export default function MembershipPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
                   <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-xs text-center space-y-2">
                     <img
-                      src={config.qrCodeUrl || '/tmssa-qr.png'}
+                      src={optimizeImageUrl(config.qrCodeUrl || '/tmssa-qr.png', { width: 400 })}
                       alt="TNMSSA UPI QR Code"
+                      loading="lazy"
+                      decoding="async"
                       className="w-40 h-40 mx-auto object-contain"
                     />
                     <p className="text-[11px] font-bold text-[#09246B]">SCAN & PAY ₹{selectedAmount}</p>

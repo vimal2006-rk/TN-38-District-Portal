@@ -1,25 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, MapPin, Clock } from 'lucide-react';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 
 export default function EventDetailPage() {
   const { id } = useParams();
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cached = useMemo(() => getCachedData(`event_${id}`), [id]);
+  const [event, setEvent] = useState(cached);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     let active = true;
+    if (!cached) setLoading(true);
     api
       .get(`/events/${id}`)
       .then((res) => {
-        if (active) setEvent(res.data?.data || null);
+        if (!active) return;
+        const data = res.data?.data || null;
+        setEvent(data);
+        if (data) setCachedData(`event_${id}`, data);
       })
       .catch(() => {
-        if (active) setEvent(null);
+        if (active && !cached) setEvent(null);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -27,7 +34,7 @@ export default function EventDetailPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, cached]);
 
   if (loading) {
     return (
@@ -65,8 +72,9 @@ export default function EventDetailPage() {
 
         {event.imageUrl && (
           <img
-            src={event.imageUrl}
+            src={optimizeImageUrl(event.imageUrl, { width: 1200 })}
             alt={isTa ? event.titleTa : event.titleEn}
+            decoding="async"
             className="w-full max-h-[420px] object-cover rounded-2xl"
           />
         )}

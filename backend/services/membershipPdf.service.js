@@ -5,6 +5,23 @@ const path = require('path');
 const LOGO_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'logo.jpg');
 const QR_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'tmssa-qr.png');
 
+// Cache static brand assets in memory once to avoid repeated synchronous disk I/O per PDF request
+let cachedLogoBuf = null;
+let cachedQrBuf = null;
+
+const getStaticAssetBuffer = (type) => {
+  if (type === 'logo') {
+    if (cachedLogoBuf === null && fs.existsSync(LOGO_PATH)) {
+      cachedLogoBuf = fs.readFileSync(LOGO_PATH);
+    }
+    return cachedLogoBuf;
+  }
+  if (cachedQrBuf === null && fs.existsSync(QR_PATH)) {
+    cachedQrBuf = fs.readFileSync(QR_PATH);
+  }
+  return cachedQrBuf;
+};
+
 const loadImageBuffer = async (fileUrl) => {
   if (!fileUrl) return null;
   try {
@@ -49,8 +66,9 @@ const drawHeader = (doc, settings) => {
   doc.rect(24, 24, 547, 794).lineWidth(2).stroke('#09246B');
 
   // Logo
-  if (fs.existsSync(LOGO_PATH)) {
-    doc.image(LOGO_PATH, 38, 34, { width: 58, height: 58 });
+  const logoBuf = getStaticAssetBuffer('logo');
+  if (logoBuf) {
+    doc.image(logoBuf, 38, 34, { width: 58, height: 58 });
   }
 
   doc
@@ -173,8 +191,9 @@ const generateApplicationPdf = async (application, settings) => {
     // Payment & QR Section
     doc.moveTo(36, 568).lineTo(558, 568).lineWidth(1).stroke('#09246B');
 
-    if (fs.existsSync(QR_PATH)) {
-      doc.image(QR_PATH, 40, 580, { width: 82, height: 82 });
+    const qrBuf = getStaticAssetBuffer('qr');
+    if (qrBuf) {
+      doc.image(qrBuf, 40, 580, { width: 82, height: 82 });
     }
 
     const payStatusLabel = formatPaymentStatusLabel(payment.paymentStatus);
@@ -262,8 +281,9 @@ const generateReceiptPdf = async (application, settings) => {
 
     doc.rect(18, 18, 559, 384).lineWidth(2).stroke('#09246B');
 
-    if (fs.existsSync(LOGO_PATH)) {
-      doc.image(LOGO_PATH, 30, 28, { width: 50, height: 50 });
+    const logoBuf = getStaticAssetBuffer('logo');
+    if (logoBuf) {
+      doc.image(logoBuf, 30, 28, { width: 50, height: 50 });
     }
 
     doc

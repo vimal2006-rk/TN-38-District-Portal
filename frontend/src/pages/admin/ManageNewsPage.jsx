@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { clearCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import {
   Newspaper,
   Plus,
@@ -48,6 +49,16 @@ export default function ManageNewsPage() {
   // Preview & Delete modals
   const [previewItem, setPreviewItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const previewBlobRef = useRef(null);
+
+  const revokePreviewBlob = useCallback(() => {
+    if (previewBlobRef.current) {
+      URL.revokeObjectURL(previewBlobRef.current);
+      previewBlobRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => revokePreviewBlob, [revokePreviewBlob]);
 
   const fetchNews = useCallback(async () => {
     setLoading(true);
@@ -69,15 +80,17 @@ export default function ManageNewsPage() {
     fetchNews();
   }, [fetchNews]);
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
+    revokePreviewBlob();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setImageFile(null);
     setImagePreview('');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const openEditModal = (item) => {
+  const openEditModal = useCallback((item) => {
+    revokePreviewBlob();
     setEditingId(item.id);
     setForm({
       titleEn: item.titleEn || '',
@@ -93,20 +106,23 @@ export default function ManageNewsPage() {
     setImageFile(null);
     setImagePreview(item.imageUrl || '');
     setModalOpen(true);
-  };
+  }, [revokePreviewBlob]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Image must be smaller than 10MB');
       return;
     }
+    revokePreviewBlob();
+    const url = URL.createObjectURL(file);
+    previewBlobRef.current = url;
     setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
+    setImagePreview(url);
+  }, [revokePreviewBlob]);
 
-  const handleSave = async (publishOverride = null) => {
+  const handleSave = useCallback(async (publishOverride = null) => {
     if (!form.titleEn.trim() && !form.titleTa.trim()) {
       toast.error('Please enter a news title.');
       return;
@@ -135,12 +151,15 @@ export default function ManageNewsPage() {
 
       if (editingId) {
         await api.put(`/admin/news/${editingId}`, fd);
+        clearCachedData(`news_${editingId}`);
         toast.success('News updated successfully!');
       } else {
         await api.post('/admin/news', fd);
         toast.success(isPub ? 'News published!' : 'News saved as draft!');
       }
 
+      clearCachedData('news');
+      revokePreviewBlob();
       setModalOpen(false);
       fetchNews();
     } catch (err) {
@@ -148,29 +167,33 @@ export default function ManageNewsPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, imageFile, editingId, fetchNews, revokePreviewBlob]);
 
-  const handleTogglePublish = async (item) => {
+  const handleTogglePublish = useCallback(async (item) => {
     try {
       await api.patch(`/admin/news/${item.id}/publish`);
+      clearCachedData('news');
+      clearCachedData(`news_${item.id}`);
       toast.success(item.isPublished ? 'Moved to Draft' : 'Published to live website!');
       fetchNews();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update status');
     }
-  };
+  }, [fetchNews]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/admin/news/${deleteTarget.id}`);
+      clearCachedData('news');
+      clearCachedData(`news_${deleteTarget.id}`);
       toast.success('News deleted');
       setDeleteTarget(null);
       fetchNews();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete news');
     }
-  };
+  }, [deleteTarget, fetchNews]);
 
   return (
     <div className="space-y-6">
@@ -264,8 +287,10 @@ export default function ManageNewsPage() {
                       <div className="flex items-center gap-3">
                         {item.imageUrl ? (
                           <img
-                            src={item.imageUrl}
+                            src={optimizeImageUrl(item.imageUrl, { width: 160 })}
                             alt={item.titleEn}
+                            loading="lazy"
+                            decoding="async"
                             className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
                           />
                         ) : (

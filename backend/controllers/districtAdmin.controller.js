@@ -1,13 +1,24 @@
 const prisma = require('../config/database');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getDistrictAdminsByDistrict = async (req, res, next) => {
   try {
     const { districtId } = req.params;
+    const cacheKey = `districtAdmins:district:${districtId}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      return res.status(200).json(cached);
+    }
+
     const admins = await prisma.districtAdministrator.findMany({
-      where: { districtId: parseInt(districtId), isActive: true },
+      where: { districtId: parseInt(districtId, 10), isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
-    return res.status(200).json({ success: true, data: admins });
+    const payload = { success: true, data: admins };
+    setCache(cacheKey, payload, 30000);
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -16,15 +27,25 @@ const getDistrictAdminsByDistrict = async (req, res, next) => {
 const getAllDistrictAdmins = async (req, res, next) => {
   try {
     const { districtId } = req.query;
+    const cacheKey = `districtAdmins:all:${districtId || 'all'}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      return res.status(200).json(cached);
+    }
+
     const where = { isActive: true };
-    if (districtId) where.districtId = parseInt(districtId);
+    if (districtId) where.districtId = parseInt(districtId, 10);
 
     const admins = await prisma.districtAdministrator.findMany({
       where,
       include: { district: { select: { nameEn: true, nameTa: true } } },
       orderBy: [{ district: { nameEn: 'asc' } }, { sortOrder: 'asc' }],
     });
-    return res.status(200).json({ success: true, data: admins });
+    const payload = { success: true, data: admins };
+    setCache(cacheKey, payload, 30000);
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -34,7 +55,7 @@ const getDistrictAdminById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const admin = await prisma.districtAdministrator.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id, 10) },
       include: { district: { select: { nameEn: true, nameTa: true } } },
     });
     if (!admin) {
@@ -53,10 +74,12 @@ const createDistrictAdmin = async (req, res, next) => {
 
     const admin = await prisma.districtAdministrator.create({
       data: {
-        districtId: parseInt(districtId), nameEn, nameTa, designationEn, designationTa,
-        phone, photoUrl: imageUrl, sortOrder: sortOrder ? parseInt(sortOrder) : 0,
+        districtId: parseInt(districtId, 10), nameEn, nameTa, designationEn, designationTa,
+        phone, photoUrl: imageUrl, sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
       },
     });
+    invalidateCache('districtAdmins:');
+    invalidateCache('districts:');
 
     return res.status(201).json({ success: true, data: admin });
   } catch (err) {
@@ -71,14 +94,16 @@ const updateDistrictAdmin = async (req, res, next) => {
     const imageUrl = req.file ? req.file.path : photoUrl;
 
     const admin = await prisma.districtAdministrator.update({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id, 10) },
       data: {
         nameEn, nameTa, designationEn, designationTa, phone,
         ...(imageUrl !== undefined && { photoUrl: imageUrl }),
-        ...(sortOrder !== undefined && { sortOrder: parseInt(sortOrder) }),
+        ...(sortOrder !== undefined && { sortOrder: parseInt(sortOrder, 10) }),
         ...(isActive !== undefined && { isActive: isActive === true || isActive === 'true' }),
       },
     });
+    invalidateCache('districtAdmins:');
+    invalidateCache('districts:');
 
     return res.status(200).json({ success: true, data: admin });
   } catch (err) {
@@ -89,7 +114,9 @@ const updateDistrictAdmin = async (req, res, next) => {
 const deleteDistrictAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await prisma.districtAdministrator.update({ where: { id: parseInt(id) }, data: { isActive: false } });
+    await prisma.districtAdministrator.update({ where: { id: parseInt(id, 10) }, data: { isActive: false } });
+    invalidateCache('districtAdmins:');
+    invalidateCache('districts:');
     return res.status(200).json({ success: true, message: 'District administrator deactivated' });
   } catch (err) {
     next(err);

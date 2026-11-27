@@ -1,8 +1,47 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon, Camera, Video, X } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
+
+const GalleryCard = memo(function GalleryCard({ item, isTa, onSelect }) {
+  return (
+    <div
+      onClick={() => onSelect(item)}
+      className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer"
+    >
+      <div className="relative h-32 xs:h-40 sm:h-52 bg-gray-100 flex items-center justify-center overflow-hidden">
+        {item.mediaType === 'VIDEO' ? (
+          <>
+            <video src={item.mediaUrl} preload="metadata" className="w-full h-full object-cover" />
+            <span className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white">
+              <Video size={14} />
+            </span>
+          </>
+        ) : item.mediaUrl ? (
+          <img
+            src={optimizeImageUrl(item.mediaUrl, { width: 600 })}
+            alt={isTa ? item.titleTa || item.titleEn : item.titleEn || 'Gallery'}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <ImageIcon size={36} className="text-orange-400" />
+        )}
+      </div>
+      <div className="p-3 sm:p-4">
+        <span className="text-[9px] sm:text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase">
+          {item.category || 'General'}
+        </span>
+        <h3 className="font-bold text-gray-800 text-xs sm:text-sm mt-1 truncate">
+          {isTa ? item.titleTa || item.titleEn || 'Media' : item.titleEn || 'Media'}
+        </h3>
+      </div>
+    </div>
+  );
+});
 
 export default function GalleryPage() {
   const { t, i18n } = useTranslation();
@@ -12,6 +51,8 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(!initialCached);
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [selectedItem, setSelectedItem] = useState(null);
+
+  const closeModal = useCallback(() => setSelectedItem(null), []);
 
   useEffect(() => {
     let active = true;
@@ -91,40 +132,7 @@ export default function GalleryPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-3 sm:gap-6">
           {filtered.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => setSelectedItem(item)}
-              className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer"
-            >
-              <div className="relative h-32 xs:h-40 sm:h-52 bg-gray-100 flex items-center justify-center overflow-hidden">
-                {item.mediaType === 'VIDEO' ? (
-                  <>
-                    <video src={item.mediaUrl} className="w-full h-full object-cover" />
-                    <span className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white">
-                      <Video size={14} />
-                    </span>
-                  </>
-                ) : item.mediaUrl ? (
-                  <img
-                    src={item.mediaUrl}
-                    alt={isTa ? item.titleTa || item.titleEn : item.titleEn || 'Gallery'}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <ImageIcon size={36} className="text-orange-400" />
-                )}
-              </div>
-              <div className="p-3 sm:p-4">
-                <span className="text-[9px] sm:text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase">
-                  {item.category || 'General'}
-                </span>
-                <h3 className="font-bold text-gray-800 text-xs sm:text-sm mt-1 truncate">
-                  {isTa ? item.titleTa || item.titleEn || 'Media' : item.titleEn || 'Media'}
-                </h3>
-              </div>
-            </div>
+            <GalleryCard key={item.id} item={item} isTa={isTa} onSelect={setSelectedItem} />
           ))}
         </div>
       )}
@@ -133,7 +141,7 @@ export default function GalleryPage() {
       {selectedItem && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setSelectedItem(null)}
+          onClick={closeModal}
         >
           <div
             className="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl"
@@ -146,7 +154,7 @@ export default function GalleryPage() {
                 </h3>
                 <p className="text-xs text-gray-400">{selectedItem.category}</p>
               </div>
-              <button onClick={() => setSelectedItem(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+              <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-gray-100">
                 <X size={18} />
               </button>
             </div>
@@ -154,7 +162,12 @@ export default function GalleryPage() {
               {selectedItem.mediaType === 'VIDEO' ? (
                 <video src={selectedItem.mediaUrl} controls autoPlay className="max-h-[70vh] w-full" />
               ) : (
-                <img src={selectedItem.mediaUrl} alt={selectedItem.titleEn || 'Gallery'} className="max-h-[70vh] object-contain" />
+                <img
+                  src={optimizeImageUrl(selectedItem.mediaUrl, { width: 1400 })}
+                  alt={selectedItem.titleEn || 'Gallery'}
+                  decoding="async"
+                  className="max-h-[70vh] object-contain"
+                />
               )}
             </div>
             {selectedItem.description && (

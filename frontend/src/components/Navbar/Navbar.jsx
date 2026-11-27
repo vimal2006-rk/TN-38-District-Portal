@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,6 +18,8 @@ import {
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const NAV_LINKS = [
   { key: 'nav.home',           label: 'Home',           path: '/',               icon: Home },
   { key: 'nav.districts',      label: 'Districts',      path: '/districts',      icon: MapPin },
@@ -29,11 +31,14 @@ const NAV_LINKS = [
   { key: 'nav.contact',        label: 'Contact',        path: '/contact',        icon: PhoneCall },
 ];
 
-export default function Navbar() {
+function Navbar() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -58,7 +63,11 @@ export default function Navbar() {
             <img
               src="/logo.jpg"
               alt="TMSSA Logo"
+              width={56}
+              height={56}
               className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-full object-cover border-2 border-[#F07818] shadow-md flex-shrink-0"
+              loading="eager"
+              decoding="async"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
             
@@ -117,7 +126,7 @@ export default function Navbar() {
 
             {/* Mobile Menu Toggle Button (Below 1024px) */}
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={toggleMenu}
               className="laptop:hidden p-1.5 xs:p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/40 flex-shrink-0"
               aria-label="Toggle navigation menu"
               aria-expanded={menuOpen}
@@ -176,7 +185,7 @@ export default function Navbar() {
       {/* ── Mobile Drawer (Below 1024px) ─────────────────────────── */}
       {menuOpen && (
         <div
-          onClick={() => setMenuOpen(false)}
+          onClick={closeMenu}
           className="laptop:hidden fixed inset-0 top-[60px] xs:top-[64px] sm:top-[70px] bg-black/60 backdrop-blur-sm z-50"
         >
           <div
@@ -207,7 +216,7 @@ export default function Navbar() {
                     key={link.path}
                     to={link.path}
                     end={link.path === '/'}
-                    onClick={() => setMenuOpen(false)}
+                    onClick={closeMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-2 px-2.5 xs:px-3 py-3 rounded-2xl text-[12px] xs:text-sm font-semibold transition-all duration-150 active:scale-[0.98] min-h-[50px] border ${
                         isActive
@@ -227,7 +236,7 @@ export default function Navbar() {
 
             <NavLink
               to={isAuthenticated ? '/admin/dashboard' : '/admin/login'}
-              onClick={() => setMenuOpen(false)}
+              onClick={closeMenu}
               className="flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white mt-3 min-h-[46px] hover:bg-white/25 transition-all"
             >
               <Shield size={16} className="text-[#F07818]" />
@@ -235,7 +244,7 @@ export default function Navbar() {
             </NavLink>
 
             <div className="pt-4 border-t border-blue-700/60 mt-4 px-3 text-xs text-blue-300 text-center">
-              © {new Date().getFullYear()} Tamilnadu Mobile Sales and Service Association
+              © {CURRENT_YEAR} Tamilnadu Mobile Sales and Service Association
             </div>
           </div>
         </div>
@@ -243,3 +252,5 @@ export default function Navbar() {
     </header>
   );
 }
+
+export default memo(Navbar);

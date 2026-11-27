@@ -38,3 +38,19 @@ export const TN_DISTRICTS = [
   { id: 37, nameEn: "Virudhunagar", nameTa: "விருதுநகர்", slug: "virudhunagar", code: "VRD", members: 330, whatsappLink: "https://chat.whatsapp.com/LkhDbEL3fWr6kr2sMiGGNK" },
   { id: 38, nameEn: "The Nilgiris", nameTa: "நீலகிரி", slug: "the-nilgiris", code: "NLG", members: 155, whatsappLink: "https://chat.whatsapp.com/IK9lPs1ZTIOBdQQZXo1fCR" }
 ];
+
+// Precomputed O(1) lookup maps to avoid repeated linear Array.find() scans per card render
+export const DISTRICT_BY_SLUG = new Map(TN_DISTRICTS.map((d) => [d.slug, d]));
+export const DISTRICT_BY_ID = new Map(TN_DISTRICTS.map((d) => [String(d.id), d]));
+
+export const findLocalDistrict = (districtOrSlug) => {
+  if (!districtOrSlug) return undefined;
+  if (typeof districtOrSlug === 'string' || typeof districtOrSlug === 'number') {
+    const key = String(districtOrSlug);
+    return DISTRICT_BY_SLUG.get(key) || DISTRICT_BY_ID.get(key);
+  }
+  return (
+    (districtOrSlug.slug && DISTRICT_BY_SLUG.get(districtOrSlug.slug)) ||
+    (districtOrSlug.id !== undefined && DISTRICT_BY_ID.get(String(districtOrSlug.id)))
+  );
+};

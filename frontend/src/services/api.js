@@ -103,6 +103,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         setAccessToken(null);
         sessionStorage.removeItem('tmssa_user');
+        localStorage.removeItem('tmssa_admin_hint');
         if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
           window.location.href = '/admin/login?expired=1';
         }
@@ -115,5 +116,32 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Coalesce identical concurrent GET requests (prevents duplicate network calls on StrictMode & rapid nav)
+const inflightGets = new Map();
+const rawGet = api.get.bind(api);
+
+const buildGetKey = (url, config) => {
+  if (!config?.params) return url;
+  const entries = Object.entries(config.params)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .sort(([a], [b]) => a.localeCompare(b));
+  return `${url}?${JSON.stringify(entries)}`;
+};
+
+api.get = (url, config) => {
+  if (config?.skipDedupe || config?.signal || (config?.responseType && config.responseType !== 'json')) {
+    return rawGet(url, config);
+  }
+  const key = buildGetKey(url, config);
+  const existing = inflightGets.get(key);
+  if (existing) return existing;
+
+  const promise = rawGet(url, config).finally(() => {
+    inflightGets.delete(key);
+  });
+  inflightGets.set(key, promise);
+  return promise;
+};
 
 export default api;

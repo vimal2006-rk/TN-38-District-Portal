@@ -29,18 +29,23 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Performance & Compression middleware
-app.use(compression());
+app.use(compression({ threshold: 1024, level: 6 }));
 
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true, maxAge: 86400 }));
 
-// Serve uploaded media when local storage fallback is used
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded media with browser cache when local storage fallback is used
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '7d', etag: true }));
 
 // Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Fast lightweight health check (before rate limiters)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, status: 'ok', uptime: Math.round(process.uptime()) });
+});
 
 // Global rate limiter
 const globalLimiter = rateLimit({

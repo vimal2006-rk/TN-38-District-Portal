@@ -1,9 +1,48 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Phone } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
+
+const BearerCard = memo(function BearerCard({ b, isTa }) {
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
+          {isTa ? b.district?.nameTa || b.district?.nameEn : b.district?.nameEn || 'District'}
+        </span>
+        {b.photoUrl && (
+          <img
+            src={optimizeImageUrl(b.photoUrl, { width: 160 })}
+            alt={b.nameEn}
+            width={44}
+            height={44}
+            loading="lazy"
+            decoding="async"
+            className="w-11 h-11 rounded-full object-cover border"
+          />
+        )}
+      </div>
+      <h3 className="text-base font-bold text-gray-900">
+        {isTa ? b.nameTa || b.nameEn : b.nameEn}
+      </h3>
+      <p className="text-xs text-gray-500 font-medium">
+        {isTa ? b.roleTa || b.roleEn : b.roleEn}
+      </p>
+      {b.phone && (
+        <a
+          href={`tel:${b.phone}`}
+          className="text-xs text-gray-500 hover:text-orange-600 pt-2 border-t border-gray-50 flex items-center gap-1.5"
+        >
+          <Phone size={12} />
+          <span>{b.phone}</span>
+        </a>
+      )}
+    </div>
+  );
+});
 
 export default function OfficeBearersPage() {
   const { t, i18n } = useTranslation();
@@ -12,6 +51,8 @@ export default function OfficeBearersPage() {
   const initialCached = getCachedData('bearers');
   const [bearers, setBearers] = useState(initialCached || []);
   const [loading, setLoading] = useState(!initialCached);
+
+  const handleDistrictChange = useCallback((e) => setSelectedDistrict(e.target.value), []);
 
   useEffect(() => {
     let active = true;
@@ -57,7 +98,7 @@ export default function OfficeBearersPage() {
         <div className="pt-4 max-w-xs mx-auto">
           <select
             value={selectedDistrict}
-            onChange={(e) => setSelectedDistrict(e.target.value)}
+            onChange={handleDistrictChange}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
           >
             <option value="all">{isTa ? 'அனைத்து மாவட்டங்களும்' : 'All Districts'}</option>
@@ -83,31 +124,7 @@ export default function OfficeBearersPage() {
       ) : (
         <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
           {filtered.map((b) => (
-            <div key={b.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
-                  {isTa ? b.district?.nameTa || b.district?.nameEn : b.district?.nameEn || 'District'}
-                </span>
-                {b.photoUrl && (
-                  <img src={b.photoUrl} alt={b.nameEn} className="w-11 h-11 rounded-full object-cover border" />
-                )}
-              </div>
-              <h3 className="text-base font-bold text-gray-900">
-                {isTa ? b.nameTa || b.nameEn : b.nameEn}
-              </h3>
-              <p className="text-xs text-gray-500 font-medium">
-                {isTa ? b.roleTa || b.roleEn : b.roleEn}
-              </p>
-              {b.phone && (
-                <a
-                  href={`tel:${b.phone}`}
-                  className="text-xs text-gray-500 hover:text-orange-600 pt-2 border-t border-gray-50 flex items-center gap-1.5"
-                >
-                  <Phone size={12} />
-                  <span>{b.phone}</span>
-                </a>
-              )}
-            </div>
+            <BearerCard key={b.id} b={b} isTa={isTa} />
           ))}
         </div>
       )}

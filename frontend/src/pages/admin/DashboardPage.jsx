@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import {
@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/admin/dashboard');
@@ -38,13 +38,13 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [fetchDashboard]);
 
-  const statCards = [
+  const statCards = useMemo(() => [
     {
       label: 'Total News',
       value: stats.totalNews,
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       bg: '#F3E8FF',
       link: '/admin/gallery',
     },
-  ];
+  ], [stats]);
 
   return (
     <div className="space-y-6">

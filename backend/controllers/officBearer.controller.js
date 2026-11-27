@@ -6,11 +6,21 @@ const { getCache, setCache, invalidateCache } = require('../utils/cache');
 const getOfficBearersByDistrict = async (req, res, next) => {
   try {
     const { districtId } = req.params;
+    const cacheKey = `admin:bearers:district:${districtId}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+      return res.status(200).json(cached);
+    }
+
     const bearers = await prisma.officBearer.findMany({
       where: { districtId: parseInt(districtId, 10), isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
-    return res.status(200).json({ success: true, data: bearers });
+    const payload = { success: true, data: bearers };
+    setCache(cacheKey, payload, 30000);
+    res.set('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+    return res.status(200).json(payload);
   } catch (err) {
     next(err);
   }
@@ -134,6 +144,7 @@ const updateOfficBearer = async (req, res, next) => {
       },
       include: { district: { select: { id: true, nameEn: true, nameTa: true } } },
     });
+    invalidateCache('admin:bearers:');
 
     await logActivity({
       userId: req.user?.id,

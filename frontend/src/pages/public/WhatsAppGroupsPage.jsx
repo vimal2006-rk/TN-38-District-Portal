@@ -1,12 +1,59 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, ExternalLink, Search } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
+
+const WhatsappGroupCard = memo(function WhatsappGroupCard({ d, isTa }) {
+  const name = isTa ? d.nameTa : d.nameEn;
+  const link = d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`;
+
+  return (
+    <div
+      className="bg-white p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+      style={{ borderColor: '#E2E8F0' }}
+    >
+      <div>
+        <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#64748B' }}>
+          <span className="font-mono flex items-center gap-1.5">
+            #{d.id < 10 ? `0${d.id}` : d.id}
+            {d.whatsappLink && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-green-200"
+                style={{ backgroundColor: '#16A34A' }}
+                title={isTa ? 'WhatsApp இணைப்பு சேர்க்கப்பட்டது' : 'WhatsApp Link Integrated'}
+              />
+            )}
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-full font-bold text-[10px]"
+            style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
+          >
+            OFFICIAL
+          </span>
+        </div>
+        <h3 className="text-base font-bold" style={{ color: '#172554' }}>{name}</h3>
+        <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{d.nameEn} District Group</p>
+      </div>
+
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full py-2.5 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
+      >
+        <ExternalLink size={14} />
+        <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
+      </a>
+    </div>
+  );
+});
 
 export default function WhatsAppGroupsPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
   const [search, setSearch] = useState('');
+
+  const handleSearchChange = useCallback((e) => setSearch(e.target.value), []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -19,7 +66,7 @@ export default function WhatsAppGroupsPage() {
   return (
     <div className="min-h-screen py-10" style={{ backgroundColor: '#F4F7FC' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <div
@@ -43,18 +90,9 @@ export default function WhatsAppGroupsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder={isTa ? 'மாவட்டம் தேடுங்கள்...' : 'Filter districts...'}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm shadow-sm focus:outline-none transition-all"
-              style={{ borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', color: '#172554' }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#16A34A';
-                e.target.style.boxShadow = '0 0 0 3px rgba(22, 163, 74, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#E2E8F0';
-                e.target.style.boxShadow = 'none';
-              }}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] bg-white text-[#172554] text-sm shadow-sm focus:outline-none focus:border-[#16A34A] focus:ring-[3px] focus:ring-[#16A34A]/15 transition-all"
             />
           </div>
         </div>
@@ -66,54 +104,9 @@ export default function WhatsAppGroupsPage() {
 
         {/* Groups Grid */}
         <div className="grid grid-cols-1 phone:grid-cols-2 md:grid-cols-3 laptop:grid-cols-4 gap-4 sm:gap-5">
-          {filtered.map((d) => {
-            const name = isTa ? d.nameTa : d.nameEn;
-            const link = d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`;
-
-            return (
-              <div
-                key={d.id}
-                className="bg-white p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-                style={{ borderColor: '#E2E8F0' }}
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#64748B' }}>
-                    <span className="font-mono flex items-center gap-1.5">
-                      #{d.id < 10 ? `0${d.id}` : d.id}
-                      {d.whatsappLink && (
-                        <span
-                          className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-green-200"
-                          style={{ backgroundColor: '#16A34A' }}
-                          title={isTa ? 'WhatsApp இணைப்பு சேர்க்கப்பட்டது' : 'WhatsApp Link Integrated'}
-                        />
-                      )}
-                    </span>
-                    <span
-                      className="px-2 py-0.5 rounded-full font-bold text-[10px]"
-                      style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
-                    >
-                      OFFICIAL
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold" style={{ color: '#172554' }}>{name}</h3>
-                  <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{d.nameEn} District Group</p>
-                </div>
-
-                <a
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  style={{ backgroundColor: '#16A34A' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
-                >
-                  <ExternalLink size={14} />
-                  <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
-                </a>
-              </div>
-            );
-          })}
+          {filtered.map((d) => (
+            <WhatsappGroupCard key={d.id} d={d} isTa={isTa} />
+          ))}
         </div>
 
       </div>

@@ -1,50 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Phone, Users, ExternalLink, ArrowLeft, Mail, Calendar, ShieldCheck } from 'lucide-react';
-import { TN_DISTRICTS } from '../../utils/districtsData';
+import { MapPin, Phone, ExternalLink, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { findLocalDistrict } from '../../utils/districtsData';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 import api from '../../services/api';
+
+const DEFAULT_ADMINS = [
+  { nameEn: 'District President', nameTa: 'மாவட்ட தலைவர்', role: 'President' },
+  { nameEn: 'District Secretary', nameTa: 'மாவட்ட செயலாளர்', role: 'Secretary' },
+  { nameEn: 'District Treasurer', nameTa: 'மாவட்ட பொருளாளர்', role: 'Treasurer' },
+  { nameEn: 'District Coordinator', nameTa: 'மாவட்ட ஒருங்கிணைப்பாளர்', role: 'Coordinator' },
+];
+
+const buildLocalFallback = (slug) => {
+  const found = findLocalDistrict(slug);
+  if (!found) return null;
+  return {
+    ...found,
+    officeAddress: `${found.nameEn} District Office, Tamil Nadu`,
+    contactNumber: '+91 94440 00000',
+    whatsappGroup: { inviteLink: found.whatsappLink || `https://chat.whatsapp.com/invite-${found.slug}` },
+    administrators: [
+      { nameEn: 'District President', nameTa: 'மாவட்ட தலைவர்', role: 'President', phone: '+91 98400 11111' },
+      { nameEn: 'District Secretary', nameTa: 'மாவட்ட செயலாளர்', role: 'Secretary', phone: '+91 98400 22222' },
+      { nameEn: 'District Treasurer', nameTa: 'மாவட்ட பொருளாளர்', role: 'Treasurer', phone: '+91 98400 33333' }
+    ],
+  };
+};
 
 export default function DistrictDetailsPage() {
   const { slug } = useParams();
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
 
-  const [district, setDistrict] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cached = useMemo(() => getCachedData(`district_${slug}`), [slug]);
+  const [district, setDistrict] = useState(cached);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
+    if (!cached) setLoading(true);
     api.get(`/districts/${slug}`)
       .then((res) => {
+        if (!active) return;
         if (res.data?.data) {
           setDistrict(res.data.data);
+          setCachedData(`district_${slug}`, res.data.data);
         } else {
-          fallback();
+          setDistrict(buildLocalFallback(slug));
         }
       })
       .catch(() => {
-        fallback();
+        if (active && !cached) {
+          setDistrict(buildLocalFallback(slug));
+        }
       })
-      .finally(() => setLoading(false));
-
-    function fallback() {
-      const found = TN_DISTRICTS.find((d) => d.slug === slug || String(d.id) === slug);
-      if (found) {
-        setDistrict({
-          ...found,
-          officeAddress: `${found.nameEn} District Office, Tamil Nadu`,
-          contactNumber: '+91 94440 00000',
-          whatsappGroup: { inviteLink: found.whatsappLink || `https://chat.whatsapp.com/invite-${found.slug}` },
-          administrators: [
-            { nameEn: 'District President', nameTa: 'மாவட்ட தலைவர்', role: 'President', phone: '+91 98400 11111' },
-            { nameEn: 'District Secretary', nameTa: 'மாவட்ட செயலாளர்', role: 'Secretary', phone: '+91 98400 22222' },
-            { nameEn: 'District Treasurer', nameTa: 'மாவட்ட பொருளாளர்', role: 'Treasurer', phone: '+91 98400 33333' }
-          ]
-        });
-      }
-    }
-  }, [slug]);
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [slug, cached]);
 
   if (loading) {
     return (
@@ -72,7 +90,7 @@ export default function DistrictDetailsPage() {
   return (
     <div className="min-h-screen py-8 sm:py-12" style={{ backgroundColor: '#F4F7FC' }}>
       <div className="max-w-5xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
-        
+
         {/* Back navigation */}
         <Link
           to="/districts"
@@ -108,10 +126,7 @@ export default function DistrictDetailsPage() {
                 href={district.whatsappGroup.inviteLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto"
-                style={{ backgroundColor: '#16A34A' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#15803d')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#16A34A')}
+                className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#16A34A] hover:bg-[#15803d]"
               >
                 <ExternalLink size={16} />
                 <span>WhatsApp Group</span>
@@ -119,10 +134,7 @@ export default function DistrictDetailsPage() {
             )}
             <Link
               to="/membership"
-              className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto"
-              style={{ backgroundColor: '#F07818' }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d4660f')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#F07818')}
+              className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#F07818] hover:bg-[#d4660f]"
             >
               <span>{isTa ? 'உறுப்பினராக இணையுங்கள்' : 'Join as Member'}</span>
             </Link>
@@ -160,14 +172,9 @@ export default function DistrictDetailsPage() {
               <ShieldCheck size={18} style={{ color: '#123DAA' }} />
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(district.administrators || [
-                { nameEn: 'District President', nameTa: 'மாவட்ட தலைவர்', role: 'President' },
-                { nameEn: 'District Secretary', nameTa: 'மாவட்ட செயலாளர்', role: 'Secretary' },
-                { nameEn: 'District Treasurer', nameTa: 'மாவட்ட பொருளாளர்', role: 'Treasurer' },
-                { nameEn: 'District Coordinator', nameTa: 'மாவட்ட ஒருங்கிணைப்பாளர்', role: 'Coordinator' },
-              ]).map((admin, idx) => (
+              {(district.administrators || DEFAULT_ADMINS).map((admin, idx) => (
                 <div
-                  key={idx}
+                  key={admin.id || idx}
                   className="p-3.5 rounded-xl border text-sm"
                   style={{ backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }}
                 >

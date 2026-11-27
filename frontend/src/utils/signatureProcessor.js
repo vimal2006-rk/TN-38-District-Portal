@@ -17,7 +17,7 @@ export async function removeSignatureBackground(file) {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(img, 0, 0, width, height);
 
         const imageData = ctx.getImageData(0, 0, width, height);
@@ -31,33 +31,33 @@ export async function removeSignatureBackground(file) {
           ((height - 1) * width + (width - 1)) * 4,
         ];
         let bgLumSum = 0;
-        for (const idx of samplePoints) {
+        for (let s = 0; s < samplePoints.length; s++) {
+          const idx = samplePoints[s];
           bgLumSum += 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
         }
         const avgBgLum = bgLumSum / samplePoints.length;
         const threshold = Math.max(150, Math.min(225, avgBgLum - 28));
+        const aaLower = threshold - 25;
+        const invAaRange = 255 / 25;
 
-        for (let i = 0; i < data.length; i += 4) {
+        for (let i = 0, len = data.length; i < len; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
           const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          const maxC = Math.max(r, g, b);
-          const minC = Math.min(r, g, b);
+          const maxC = r > g ? (r > b ? r : b) : (g > b ? g : b);
+          const minC = r < g ? (r < b ? r : b) : (g < b ? g : b);
           const sat = maxC - minC;
 
-          // Light/neutral paper pixel -> transparent
           if (lum > threshold && sat < 55) {
             data[i + 3] = 0;
-          } else if (lum > threshold - 25 && sat < 45) {
-            // Smooth edge anti-aliasing
-            const factor = (threshold - lum) / 25;
-            data[i + 3] = Math.max(0, Math.min(255, Math.round(255 * factor)));
+          } else if (lum > aaLower && sat < 45) {
+            const alpha = ((threshold - lum) * invAaRange + 0.5) | 0;
+            data[i + 3] = alpha < 0 ? 0 : alpha > 255 ? 255 : alpha;
           } else {
-            // Crisp dark/blue ink stroke
-            data[i] = Math.max(0, Math.round(r * 0.85));
-            data[i + 1] = Math.max(0, Math.round(g * 0.85));
-            data[i + 2] = Math.max(0, Math.round(b * 0.9));
+            data[i] = (r * 0.85 + 0.5) | 0;
+            data[i + 1] = (g * 0.85 + 0.5) | 0;
+            data[i + 2] = (b * 0.9 + 0.5) | 0;
             data[i + 3] = 255;
           }
         }

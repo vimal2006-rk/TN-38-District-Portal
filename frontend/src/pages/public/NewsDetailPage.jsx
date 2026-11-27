@@ -1,25 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, Newspaper } from 'lucide-react';
 import api from '../../services/api';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
+import { optimizeImageUrl } from '../../utils/imageOptimizer';
 
 export default function NewsDetailPage() {
   const { id } = useParams();
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cached = useMemo(() => getCachedData(`news_${id}`), [id]);
+  const [article, setArticle] = useState(cached);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     let active = true;
+    if (!cached) setLoading(true);
     api
       .get(`/news/${id}`)
       .then((res) => {
-        if (active) setArticle(res.data?.data || null);
+        if (!active) return;
+        const data = res.data?.data || null;
+        setArticle(data);
+        if (data) setCachedData(`news_${id}`, data);
       })
       .catch(() => {
-        if (active) setArticle(null);
+        if (active && !cached) setArticle(null);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -27,7 +34,7 @@ export default function NewsDetailPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, cached]);
 
   if (loading) {
     return (
@@ -71,8 +78,9 @@ export default function NewsDetailPage() {
 
         {article.imageUrl ? (
           <img
-            src={article.imageUrl}
+            src={optimizeImageUrl(article.imageUrl, { width: 1200 })}
             alt={isTa ? article.titleTa : article.titleEn}
+            decoding="async"
             className="w-full max-h-[420px] object-cover rounded-2xl"
           />
         ) : (

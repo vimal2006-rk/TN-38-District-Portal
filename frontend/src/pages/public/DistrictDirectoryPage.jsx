@@ -1,34 +1,47 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, MapPin } from 'lucide-react';
 import DistrictCard from '../../components/DistrictCard/DistrictCard';
-import { TN_DISTRICTS } from '../../utils/districtsData';
+import { TN_DISTRICTS, findLocalDistrict } from '../../utils/districtsData';
+import { getCachedData, setCachedData } from '../../utils/clientCache';
 import api from '../../services/api';
+
+const mergeWithLocal = (apiDistricts) =>
+  apiDistricts.map((d) => {
+    const local = findLocalDistrict(d);
+    return { ...d, whatsappLink: local?.whatsappLink || d.whatsappLink };
+  });
 
 export default function DistrictDirectoryPage() {
   const { t, i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
-  const [districts, setDistricts] = useState(TN_DISTRICTS);
+  const initialDistricts = useMemo(() => {
+    const cached = getCachedData('districts');
+    return cached?.length ? mergeWithLocal(cached) : TN_DISTRICTS;
+  }, []);
+  const [districts, setDistricts] = useState(initialDistricts);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    let active = true;
     api.get('/districts')
       .then((res) => {
+        if (!active) return;
         if (res.data?.data?.length > 0) {
-          // Merge API data with local whatsappLink so real links are preserved
-          const merged = res.data.data.map((d) => {
-            const local = TN_DISTRICTS.find(
-              (ld) => ld.slug === d.slug || String(ld.id) === String(d.id)
-            );
-            return { ...d, whatsappLink: local?.whatsappLink || d.whatsappLink };
-          });
-          setDistricts(merged);
+          setCachedData('districts', res.data.data);
+          setDistricts(mergeWithLocal(res.data.data));
         }
       })
       .catch(() => {
-        setDistricts(TN_DISTRICTS);
+        if (active && !initialDistricts?.length) setDistricts(TN_DISTRICTS);
       });
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [initialDistricts]);
+
+  const handleSearchChange = useCallback((e) => setSearch(e.target.value), []);
+  const handleClearSearch = useCallback(() => setSearch(''), []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -69,22 +82,9 @@ export default function DistrictDirectoryPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder={isTa ? 'மாவட்டம் தேடுங்கள் (எ.கா: Madurai, சென்னை)...' : 'Search district (e.g. Chennai, Madurai)...'}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border focus:outline-none shadow-sm text-sm transition-all"
-              style={{
-                borderColor: '#E2E8F0',
-                backgroundColor: '#FFFFFF',
-                color: '#172554'
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#123DAA';
-                e.target.style.boxShadow = '0 0 0 3px rgba(18, 61, 170, 0.15)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#E2E8F0';
-                e.target.style.boxShadow = 'none';
-              }}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E2E8F0] bg-white text-[#172554] focus:outline-none focus:border-[#123DAA] focus:ring-[3px] focus:ring-[#123DAA]/15 shadow-sm text-sm transition-all"
             />
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function DistrictDirectoryPage() {
           </span>
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={handleClearSearch}
               className="font-medium hover:underline"
               style={{ color: '#F07818' }}
             >
