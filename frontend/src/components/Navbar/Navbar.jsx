@@ -1,19 +1,32 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Shield, ArrowRight, Phone } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Shield,
+  Phone,
+  Home,
+  MapPin,
+  UserPlus,
+  Newspaper,
+  Calendar,
+  Camera,
+  Award,
+  PhoneCall,
+} from 'lucide-react';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
 
 const NAV_LINKS = [
-  { key: 'nav.home',           label: 'Home',           path: '/' },
-  { key: 'nav.districts',      label: 'Districts',      path: '/districts' },
-  { key: 'nav.membership',     label: 'Membership',     path: '/membership' },
-  { key: 'nav.news',           label: 'News',           path: '/news' },
-  { key: 'nav.events',         label: 'Events',         path: '/events' },
-  { key: 'nav.gallery',        label: 'Gallery',        path: '/gallery' },
-  { key: 'nav.administration', label: 'Administration', path: '/office-bearers' },
-  { key: 'nav.contact',        label: 'Contact',        path: '/contact' },
+  { key: 'nav.home',           label: 'Home',           path: '/',               icon: Home },
+  { key: 'nav.districts',      label: 'Districts',      path: '/districts',      icon: MapPin },
+  { key: 'nav.membership',     label: 'Membership',     path: '/membership',     icon: UserPlus },
+  { key: 'nav.news',           label: 'News',           path: '/news',           icon: Newspaper },
+  { key: 'nav.events',         label: 'Events',         path: '/events',         icon: Calendar },
+  { key: 'nav.gallery',        label: 'Gallery',        path: '/gallery',        icon: Camera },
+  { key: 'nav.administration', label: 'Administration', path: '/office-bearers', icon: Award },
+  { key: 'nav.contact',        label: 'Contact',        path: '/contact',        icon: PhoneCall },
 ];
 
 export default function Navbar() {
@@ -125,28 +138,32 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-11 sm:h-12">
             
             {/* All Desktop Navigation Links */}
-            <div className="flex items-center gap-1 xl:gap-2 flex-nowrap w-full justify-start">
-              {NAV_LINKS.map((link) => (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  end={link.path === '/'}
-                  className={({ isActive }) =>
-                    `text-xs xl:text-[13px] 2xl:text-sm font-semibold transition-all duration-200 px-3 xl:px-3.5 py-1.5 rounded-lg whitespace-nowrap ${
-                      isActive
-                        ? 'text-white font-bold bg-white/20 border-b-2 border-[#F07818] shadow-inner'
-                        : 'text-blue-100 hover:text-white hover:bg-white/10'
-                    }`
-                  }
-                >
-                  {t(link.key, link.label)}
-                </NavLink>
-              ))}
+            <div className="flex items-center gap-1.5 xl:gap-2 flex-nowrap w-full justify-start">
+              {NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <NavLink
+                    key={link.path}
+                    to={link.path}
+                    end={link.path === '/'}
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-1.5 text-xs xl:text-[13px] 2xl:text-sm font-semibold transition-all duration-200 px-3 xl:px-3.5 py-1.5 rounded-full whitespace-nowrap ${
+                        isActive
+                          ? 'text-white font-bold bg-[#F07818] shadow-sm'
+                          : 'text-blue-100 hover:text-white hover:bg-white/15'
+                      }`
+                    }
+                  >
+                    <Icon size={14} className="opacity-90 flex-shrink-0" />
+                    <span>{t(link.key, link.label)}</span>
+                  </NavLink>
+                );
+              })}
 
               {isAuthenticated && (
                 <NavLink
                   to="/admin/dashboard"
-                  className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-[#F07818] text-white hover:bg-[#d4660f] flex items-center gap-1 ml-auto"
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center gap-1.5 ml-auto transition-all"
                 >
                   <Shield size={13} />
                   <span>Admin</span>
@@ -180,41 +197,46 @@ export default function Navbar() {
               </a>
             </div>
 
-            <p className="text-[11px] font-bold text-blue-300 uppercase tracking-widest px-3 mb-2">
-              Navigation / வழிசெலுத்தல்
+            <p className="text-[11px] font-bold text-blue-300 uppercase tracking-widest px-1 mb-2.5">
+              Quick Navigation / விரைவு வழிசெலுத்தல்
             </p>
 
-            <div className="space-y-1">
-              {NAV_LINKS.map((link) => (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  end={link.path === '/'}
-                  onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center justify-between text-base font-semibold px-4 py-3 rounded-xl transition-colors min-h-[46px] ${
-                      isActive
-                        ? 'bg-[#123DAA] text-white border-l-4 border-[#F07818]'
-                        : 'text-blue-100 hover:bg-[#123DAA]/70 hover:text-white active:bg-[#123DAA]'
-                    }`
-                  }
-                >
-                  <span>{t(link.key, link.label)}</span>
-                  <ArrowRight size={16} className="text-[#F07818]" />
-                </NavLink>
-              ))}
-
-              {isAuthenticated && (
-                <NavLink
-                  to="/admin/dashboard"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 text-base font-bold px-4 py-3 rounded-xl bg-[#F07818] text-white mt-3 min-h-[46px] hover:bg-[#d4660f]"
-                >
-                  <Shield size={18} />
-                  <span>Admin Console / நிர்வாக பலகம்</span>
-                </NavLink>
-              )}
+            <div className="grid grid-cols-2 gap-2.5">
+              {NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <NavLink
+                    key={link.path}
+                    to={link.path}
+                    end={link.path === '/'}
+                    onClick={() => setMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-xs xs:text-sm font-semibold transition-all duration-150 active:scale-[0.98] min-h-[50px] border ${
+                        isActive
+                          ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
+                          : 'bg-[#123DAA]/60 text-blue-50 border-white/10 hover:bg-[#123DAA] hover:text-white'
+                      }`
+                    }
+                  >
+                    <span className="p-1.5 rounded-lg bg-white/15 flex-shrink-0">
+                      <Icon size={16} />
+                    </span>
+                    <span className="truncate">{t(link.key, link.label)}</span>
+                  </NavLink>
+                );
+              })}
             </div>
+
+            {isAuthenticated && (
+              <NavLink
+                to="/admin/dashboard"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white mt-3 min-h-[46px] hover:bg-white/25 transition-all"
+              >
+                <Shield size={16} className="text-[#F07818]" />
+                <span>Admin Console / நிர்வாக பலகம்</span>
+              </NavLink>
+            )}
 
             <div className="pt-4 border-t border-blue-700/60 mt-4 px-3 text-xs text-blue-300 text-center">
               © {new Date().getFullYear()} Tamilnadu Mobile Sales and Service Association
