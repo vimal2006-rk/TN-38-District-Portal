@@ -15,8 +15,26 @@ import {
 } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
+import { removeSignatureBackground } from '../../utils/signatureProcessor';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const isValidAadhaarClient = (num) => {
+  const digits = String(num).replace(/\D/g, '');
+  if (!/^\d{12}$/.test(digits) || /^(\d)\1{11}$/.test(digits)) return false;
+  const d = [
+    [0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],
+    [5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0],
+  ];
+  const p = [
+    [0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],
+    [9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8],
+  ];
+  let c = 0;
+  const rev = digits.split('').reverse().map(Number);
+  for (let i = 0; i < rev.length; i++) c = d[c][p[i % 8][rev[i]]];
+  return c === 0;
+};
 
 const INITIAL_FORM = {
   districtId: '13',
@@ -98,7 +116,7 @@ export default function MembershipPage() {
     return 1;
   }, [submittedData, photoFile, form.applicantName, form.phone, form.shopName]);
 
-  const handleImageSelect = (e, type) => {
+  const handleImageSelect = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
@@ -109,17 +127,23 @@ export default function MembershipPage() {
       toast.error('Image size must be under 5MB.');
       return;
     }
-    const url = URL.createObjectURL(file);
     if (type === 'photo') {
       setPhotoFile(file);
-      setPhotoPreview(url);
+      setPhotoPreview(URL.createObjectURL(file));
       setErrors((prev) => ({ ...prev, photo: undefined }));
     } else if (type === 'signature') {
-      setSigFile(file);
-      setSigPreview(url);
+      try {
+        const { file: cleanSigFile, previewUrl } = await removeSignatureBackground(file);
+        setSigFile(cleanSigFile);
+        setSigPreview(previewUrl);
+        toast.success('Signature background removed automatically!');
+      } catch {
+        setSigFile(file);
+        setSigPreview(URL.createObjectURL(file));
+      }
     } else if (type === 'screenshot') {
       setScreenshotFile(file);
-      setScreenshotPreview(url);
+      setScreenshotPreview(URL.createObjectURL(file));
     }
   };
 
@@ -130,14 +154,28 @@ export default function MembershipPage() {
     if (!form.dob) e.dob = 'Date of Birth is required';
     else if (Number(calculatedAge) < 18) e.dob = 'Applicant must be at least 18 years old';
     if (!form.educationalQualification.trim()) e.educationalQualification = 'Qualification is required';
-    if (form.aadhaarNumber && form.aadhaarNumber.replace(/\D/g, '').length !== 12) {
-      e.aadhaarNumber = 'Aadhaar must be 12 digits';
+
+    const aadhaarDigits = form.aadhaarNumber.replace(/\D/g, '');
+    if (aadhaarDigits && !isValidAadhaarClient(aadhaarDigits)) {
+      e.aadhaarNumber = 'Enter a valid 12-digit Aadhaar number';
     }
+
     if (!form.experience.trim()) e.experience = 'Experience is required';
     if (!form.shopName.trim()) e.shopName = 'Shop Name is required';
     if (!form.shopAddress.trim()) e.shopAddress = 'Shop Address is required';
-    if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, ''))) {
-      e.phone = 'Enter a valid 10-digit mobile number';
+
+    const cleanPhone = form.phone.replace(/\D/g, '');
+    if (!/^[6-9]\d{9}$/.test(cleanPhone) || /^(\d)\1{9}$/.test(cleanPhone)) {
+      e.phone = 'Enter a valid 10-digit Indian mobile number';
+    }
+
+    if (form.alternateMobile.trim()) {
+      const cleanAlt = form.alternateMobile.replace(/\D/g, '');
+      if (!/^[6-9]\d{9}$/.test(cleanAlt) || /^(\d)\1{9}$/.test(cleanAlt)) {
+        e.alternateMobile = 'Alternate mobile must be a valid 10-digit number';
+      } else if (cleanAlt === cleanPhone) {
+        e.alternateMobile = 'Alternate mobile must differ from primary mobile';
+      }
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       e.email = 'Enter a valid email address';
@@ -312,7 +350,9 @@ export default function MembershipPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-6">
+            <form onSubmit={handleSubmit} autoComplete="off" className="p-5 sm:p-8 space-y-6">
+              {/* Honeypot anti-bot field */}
+              <input type="text" name="website_url" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
               {/* Serial No & Date */}
               <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-blue-50/70 border border-blue-100 text-xs">
                 <div>
@@ -399,7 +439,8 @@ export default function MembershipPage() {
                     </label>
                     <input
                       type="text"
-                      autoComplete="off"
+                      name="edu_qualification_field"
+                      autoComplete="new-password"
                       placeholder="e.g. Diploma / B.Sc / HSC"
                       value={form.educationalQualification}
                       onChange={(e) => setForm({ ...form, educationalQualification: e.target.value })}
@@ -445,19 +486,37 @@ export default function MembershipPage() {
                   </label>
                   <div className="relative">
                     <input
-                      type={showAadhaar ? 'text' : 'password'}
+                      type="text"
+                      name="aadhaar_secure_field"
+                      autoComplete="new-password"
+                      inputMode="numeric"
                       maxLength={12}
                       placeholder="12-digit Aadhaar (Optional)"
-                      value={form.aadhaarNumber}
-                      onChange={(e) =>
-                        setForm({ ...form, aadhaarNumber: e.target.value.replace(/\D/g, '') })
+                      value={
+                        showAadhaar
+                          ? form.aadhaarNumber
+                          : form.aadhaarNumber.length > 4
+                          ? `${'X'.repeat(form.aadhaarNumber.length - 4)}${form.aadhaarNumber.slice(-4)}`
+                          : form.aadhaarNumber
                       }
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm"
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 12);
+                        if (showAadhaar || e.target.value.length <= form.aadhaarNumber.length) {
+                          setForm({ ...form, aadhaarNumber: raw });
+                        } else {
+                          const added = e.target.value.slice(-1).replace(/\D/g, '');
+                          if (added && form.aadhaarNumber.length < 12) {
+                            setForm({ ...form, aadhaarNumber: form.aadhaarNumber + added });
+                          }
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm font-mono tracking-wider"
                     />
                     <button
                       type="button"
                       onClick={() => setShowAadhaar(!showAadhaar)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      title={showAadhaar ? 'Mask Aadhaar' : 'Show Aadhaar'}
                     >
                       {showAadhaar ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -534,12 +593,17 @@ export default function MembershipPage() {
                   <input
                     type="tel"
                     maxLength={10}
+                    inputMode="numeric"
+                    placeholder="10-digit alternate mobile"
                     value={form.alternateMobile}
                     onChange={(e) =>
-                      setForm({ ...form, alternateMobile: e.target.value.replace(/\D/g, '') })
+                      setForm({ ...form, alternateMobile: e.target.value.replace(/\D/g, '').slice(0, 10) })
                     }
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm"
                   />
+                  {errors.alternateMobile && (
+                    <p className="text-xs text-red-600 mt-1">{errors.alternateMobile}</p>
+                  )}
                 </div>
 
                 <div>
