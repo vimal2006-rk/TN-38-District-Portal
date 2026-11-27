@@ -27,6 +27,13 @@ enum MediaType {
   VIDEO
 }
 
+enum PaymentStatus {
+  PENDING
+  PAYMENT_SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
 // ─────────────────────────────────────────────
 // Role
 // ─────────────────────────────────────────────
@@ -85,6 +92,106 @@ model District {
   news                   News[]
   gallery                Gallery[]
   users                  User[]
+  membershipApplications MembershipApplication[]
+}
+
+// ─────────────────────────────────────────────
+// Membership Application, Payment, Documents, Settings
+// ─────────────────────────────────────────────
+
+model MembershipApplication {
+  id                       Int          @id @default(autoincrement())
+  serialNumber             String       @unique
+  registrationDate         DateTime     @default(now())
+  districtId               Int?
+  applicantName            String
+  age                      Int
+  fatherName               String
+  dob                      DateTime
+  bloodGroup               String
+  educationalQualification String
+  aadhaarMasked            String?
+  aadhaarEncrypted         String?
+  aadhaarHash              String?
+  experience               String
+  shopName                 String
+  shopAddress              String
+  phone                    String
+  referName                String?
+  email                    String
+  socialId                 String?
+  alternateMobile          String?
+  areaRtoNo                String
+  termsAccepted            Boolean      @default(true)
+  membershipStatus         MemberStatus @default(PENDING)
+  rejectionReason          String?
+  approvedAt               DateTime?
+  reviewedById             Int?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  district  District?            @relation(fields: [districtId], references: [id])
+  payments  MembershipPayment[]
+  documents MembershipDocument[]
+
+  @@index([membershipStatus, createdAt])
+  @@index([phone])
+  @@index([email])
+  @@map("membership_applications")
+}
+
+model MembershipPayment {
+  id                   Int           @id @default(autoincrement())
+  applicationId        Int
+  planType             String        @default("ANNUAL")
+  amount               Int           @default(1200)
+  upiTransactionId     String        @unique
+  paymentScreenshotUrl String?
+  paymentStatus        PaymentStatus @default(PAYMENT_SUBMITTED)
+  rejectionReason      String?
+  verifiedAt           DateTime?
+  verifiedById         Int?
+  verificationHistory  Json?
+  submittedAt          DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  application MembershipApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([paymentStatus, submittedAt])
+  @@map("membership_payments")
+}
+
+model MembershipDocument {
+  id            Int      @id @default(autoincrement())
+  applicationId Int
+  docType       String
+  fileUrl       String
+  mimeType      String?
+  fileSize      Int?
+  createdAt     DateTime @default(now())
+
+  application MembershipApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("membership_documents")
+}
+
+model MembershipSetting {
+  id                Int      @id @default(autoincrement())
+  associationNameEn String   @default("TAMILNADU MOBILE SALES AND SERVICE ASSOCIATION")
+  associationNameTa String   @default("தமிழ்நாடு மொபைல் சேல்ஸ் மற்றும் சர்வீஸ் அசோசியேசன்")
+  regNumber         String   @default("Regd : 23/2025")
+  address           String   @default("234 Meenakshi Bazar, Scott Road, Madurai - 625001")
+  helpline1         String   @default("+91 99447 73668")
+  helpline2         String   @default("+91 97879 75782")
+  annualFee         Int      @default(1200)
+  halfYearlyFee     Int      @default(600)
+  upiId             String   @default("tnmssa@upi")
+  qrCodeUrl         String   @default("/tmssa-qr.png")
+  termsText         String   @default("I agree to the terms and conditions of Tamilnadu Mobile Sales and Service Association (TNMSSA). Membership fee must be paid only to the official association account.")
+  updatedAt         DateTime @updatedAt
+
+  @@map("membership_settings")
 }
 
 // ─────────────────────────────────────────────

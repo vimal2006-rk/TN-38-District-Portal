@@ -88,6 +88,28 @@ const uploadMedia = multer({
   limits: { fileSize: 50 * 1024 * 1024, files: 10 },
 });
 
+const strictJpgPngFilter = (req, file, cb) => {
+  if (['image/jpeg', 'image/jpg', 'image/png'].includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    const err = new Error('Only JPG, JPEG, and PNG images are allowed for membership uploads.');
+    err.statusCode = 400;
+    cb(err, false);
+  }
+};
+
+const uploadMembershipImage = multer({
+  storage: useCloud ? cloudinaryImageStorage : diskStorage,
+  fileFilter: strictJpgPngFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+const uploadMembershipFiles = uploadMembershipImage.fields([
+  { name: 'photo', maxCount: 1 },
+  { name: 'signature', maxCount: 1 },
+  { name: 'paymentScreenshot', maxCount: 1 },
+]);
+
 /**
  * Helper to resolve uploaded file URL (Cloudinary HTTPS URL or backend /uploads URL)
  */
@@ -106,6 +128,7 @@ module.exports = {
   uploadMultiple: uploadImage.array('images', 10),
   uploadGallerySingle: uploadMedia.single('media'),
   uploadGalleryMultiple: uploadMedia.array('files', 10),
+  uploadMembershipFiles,
   resolveUploadedFileUrl,
   isCloudinaryConfigured,
 };

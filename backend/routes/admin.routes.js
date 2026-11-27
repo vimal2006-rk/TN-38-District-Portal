@@ -32,6 +32,13 @@ const {
   updateOfficBearer,
   deleteOfficBearer,
 } = require('../controllers/officBearer.controller');
+const {
+  getMembershipStats,
+  listMembershipApplications,
+  getMembershipApplicationDetail,
+  verifyOrRejectPayment,
+  approveOrRejectMembership,
+} = require('../controllers/membership.controller');
 
 const { authenticate, authorizeRoles, optionalAuthenticate } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
@@ -85,5 +92,12 @@ router.get('/administration', getAllOfficBearers);
 router.post('/administration', uploadSingle, createOfficBearer);
 router.put('/administration/:id', uploadSingle, updateOfficBearer);
 router.delete('/administration/:id', deleteOfficBearer);
+
+// ── Membership & Payment Verification Management ──────────────────────────────
+router.get('/membership/stats', getMembershipStats);
+router.get('/membership/applications', listMembershipApplications);
+router.get('/membership/applications/:id', getMembershipApplicationDetail);
+router.patch('/membership/applications/:id/payment', verifyOrRejectPayment);
+router.patch('/membership/applications/:id/status', approveOrRejectMembership);
 
 module.exports = router;

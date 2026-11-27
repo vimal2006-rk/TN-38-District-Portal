@@ -1,86 +1,604 @@
-import { useState } from 'react';
-import { Search, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import api, { getAccessToken } from '../../services/api';
+import { useDebounce } from '../../hooks/useDebounce';
+import {
+  Users,
+  UserPlus,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  FileText,
+  Download,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ShieldCheck,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-export default function ManageMembersPage() {
-  const [members, setMembers] = useState([
-    { id: 1, name: 'S. Ramanathan', mobile: '98401 11111', district: 'Chennai', category: 'General', status: 'APPROVED', date: '2026-11-20' },
-    { id: 2, name: 'K. Meenakshi', mobile: '98402 22222', district: 'Madurai', category: 'Senior', status: 'PENDING', date: '2026-11-21' },
-    { id: 3, name: 'A. Dinesh', mobile: '98403 33333', district: 'Coimbatore', category: 'Student', status: 'PENDING', date: '2026-11-22' },
-    { id: 4, name: 'M. Sangeetha', mobile: '98404 44444', district: 'Salem', category: 'General', status: 'REJECTED', date: '2026-11-19' },
-  ]);
+const PAYMENT_BADGE = {
+  PENDING: 'bg-gray-100 text-gray-700',
+  PAYMENT_SUBMITTED: 'bg-amber-100 text-amber-800',
+  VERIFIED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+};
 
-  const updateStatus = (id, status) => {
-    setMembers(members.map(m => m.id === id ? { ...m, status } : m));
-    toast.success(`Member status updated to ${status}`);
+const MEMBER_BADGE = {
+  PENDING: 'bg-amber-100 text-amber-800',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  INACTIVE: 'bg-gray-100 text-gray-600',
+};
+
+export default function ManageMembersPage() {
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    newApplications: 0,
+    pendingPayments: 0,
+    verifiedPayments: 0,
+    rejectedPayments: 0,
+    approvedMembers: 0,
+  });
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
+  const [paymentFilter, setPaymentFilter] = useState('ALL');
+  const [memberFilter, setMemberFilter] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [rejectModal, setRejectModal] = useState(null); // { id, type: 'payment'|'membership', serialNumber }
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {
+        page,
+        limit: 10,
+        sortOrder,
+        ...(debouncedSearch.trim() && { search: debouncedSearch.trim() }),
+        ...(paymentFilter !== 'ALL' && { paymentStatus: paymentFilter }),
+        ...(memberFilter !== 'ALL' && { membershipStatus: memberFilter }),
+      };
+
+      const [statsRes, listRes] = await Promise.all([
+        api.get('/admin/membership/stats'),
+        api.get('/admin/membership/applications', { params }),
+      ]);
+
+      if (statsRes.data?.stats) setStats(statsRes.data.stats);
+      setApplications(listRes.data?.data || []);
+      if (listRes.data?.pagination) setPagination(listRes.data.pagination);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load membership data');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, paymentFilter, memberFilter, sortOrder]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const openDetail = async (id) => {
+    setLoadingDetail(true);
+    try {
+      const res = await api.get(`/admin/membership/applications/${id}`);
+      setSelectedDetail(res.data?.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load application details');
+    } finally {
+      setLoadingDetail(false);
+    }
   };
+
+  const handleDownloadPdf = async (serialNumber, type) => {
+    try {
+      const token = getAccessToken();
+      const base = import.meta.env.VITE_API_BASE_URL || '/api';
+      const res = await fetch(`${base}/membership/${serialNumber}/pdf/${type}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to generate PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${serialNumber}-${type === 'receipt' ? 'Receipt' : 'Application'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err.message || 'Could not download PDF');
+    }
+  };
+
+  const handlePaymentAction = async (id, paymentStatus, reason = '') => {
+    setProcessing(true);
+    try {
+      await api.patch(`/admin/membership/applications/${id}/payment`, {
+        paymentStatus,
+        rejectionReason: reason,
+      });
+      toast.success(`Payment marked as ${paymentStatus}`);
+      setRejectModal(null);
+      setRejectionReason('');
+      fetchAll();
+      if (selectedDetail?.id === id) openDetail(id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment update failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleMembershipAction = async (id, membershipStatus, reason = '') => {
+    setProcessing(true);
+    try {
+      await api.patch(`/admin/membership/applications/${id}/status`, {
+        membershipStatus,
+        rejectionReason: reason,
+      });
+      toast.success(`Membership ${membershipStatus}`);
+      setRejectModal(null);
+      setRejectionReason('');
+      fetchAll();
+      if (selectedDetail?.id === id) openDetail(id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Status update failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const statCards = [
+    { label: 'Total Applications', value: stats.totalMembers, icon: Users, color: '#123DAA', bg: '#EEF2FF' },
+    { label: 'New Pending Apps', value: stats.newApplications, icon: UserPlus, color: '#D97706', bg: '#FEF3C7' },
+    { label: 'Pending Payments', value: stats.pendingPayments, icon: Clock, color: '#F07818', bg: '#FFF7ED' },
+    { label: 'Verified Payments', value: stats.verifiedPayments, icon: ShieldCheck, color: '#16A34A', bg: '#DCFCE7' },
+    { label: 'Rejected Payments', value: stats.rejectedPayments, icon: XCircle, color: '#DC2626', bg: '#FEE2E2' },
+    { label: 'Approved Members', value: stats.approvedMembers, icon: CheckCircle2, color: '#0284C7', bg: '#E0F2FE' },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Manage Members & Applications</h2>
-          <p className="text-xs text-gray-400">Review, verify, approve, or reject district member applications</p>
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Membership & Payment Verification</h2>
+        <p className="text-xs text-gray-500">
+          Verify UPI transactions, inspect uploaded photos/screenshots, approve memberships, and download PDFs
+        </p>
+      </div>
+
+      {/* 6 Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {statCards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div key={c.label} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: c.bg, color: c.color }}>
+                  <Icon size={16} />
+                </div>
+                <span className="text-xl font-extrabold text-gray-900">{c.value}</span>
+              </div>
+              <p className="text-[11px] font-semibold text-gray-500">{c.label}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Search & Filters */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search Serial No, Name, Mobile, Email, or UTR..."
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs sm:text-sm"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={paymentFilter}
+            onChange={(e) => {
+              setPaymentFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          >
+            <option value="ALL">All Payments</option>
+            <option value="PAYMENT_SUBMITTED">Payment Submitted</option>
+            <option value="VERIFIED">Verified</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+
+          <select
+            value={memberFilter}
+            onChange={(e) => {
+              setMemberFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          >
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
         </div>
       </div>
 
+      {/* Applications Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-600 min-w-[560px]">
+          <table className="w-full text-left text-xs text-gray-600 min-w-[920px]">
             <thead className="bg-gray-50 text-gray-400 uppercase tracking-wider border-b">
               <tr>
-                <th className="py-3 px-4">Member Name</th>
-                <th className="py-3 px-4">Mobile</th>
-                <th className="py-3 px-4">District</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Serial No</th>
+                <th className="py-3 px-4">Applicant</th>
+                <th className="py-3 px-4">Mobile / Email</th>
+                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">UPI Txn ID & Amt</th>
+                <th className="py-3 px-4">Payment</th>
+                <th className="py-3 px-4">Membership</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {members.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 font-bold text-gray-800">{m.name}</td>
-                  <td className="py-3 px-4 font-mono">{m.mobile}</td>
-                  <td className="py-3 px-4">{m.district}</td>
-                  <td className="py-3 px-4">{m.category}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                        m.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-700'
-                          : m.status === 'REJECTED'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right space-x-2">
-                    {m.status !== 'APPROVED' && (
-                      <button
-                        onClick={() => updateStatus(m.id, 'APPROVED')}
-                        className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    {m.status !== 'REJECTED' && (
-                      <button
-                        onClick={() => updateStatus(m.id, 'REJECTED')}
-                        className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold"
-                      >
-                        Reject
-                      </button>
-                    )}
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-gray-400">
+                    Loading membership applications...
                   </td>
                 </tr>
-              ))}
+              ) : applications.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-10 text-center text-gray-400">
+                    No membership applications found.
+                  </td>
+                </tr>
+              ) : (
+                applications.map((app) => {
+                  const pay = app.payments?.[0] || {};
+                  return (
+                    <tr key={app.id} className="hover:bg-gray-50">
+                      <td className="py-3 px-4 font-mono font-bold text-[#09246B]">
+                        {app.serialNumber}
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-bold text-gray-900">{app.applicantName}</p>
+                        <p className="text-[11px] text-gray-400">{app.shopName}</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-mono font-semibold text-gray-800">{app.phone}</p>
+                        <p className="text-[11px] text-gray-400">{app.email}</p>
+                      </td>
+                      <td className="py-3 px-4 font-mono">
+                        {new Date(app.registrationDate || app.createdAt).toLocaleDateString('en-IN')}
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-mono font-bold text-gray-800">{pay.upiTransactionId || '—'}</p>
+                        <p className="text-[11px] text-gray-500">₹{pay.amount || 1200}</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            PAYMENT_BADGE[pay.paymentStatus] || PAYMENT_BADGE.PENDING
+                          }`}
+                        >
+                          {pay.paymentStatus === 'PAYMENT_SUBMITTED' ? 'PENDING VERIFICATION' : pay.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            MEMBER_BADGE[app.membershipStatus] || MEMBER_BADGE.PENDING
+                          }`}
+                        >
+                          {app.membershipStatus}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => openDetail(app.id)}
+                            title="View Full Application"
+                            className="p-1.5 rounded-lg text-[#123DAA] hover:bg-blue-50"
+                          >
+                            <Eye size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadPdf(app.serialNumber, 'application')}
+                            title="Download Application PDF"
+                            className="p-1.5 rounded-lg text-gray-700 hover:bg-gray-100"
+                          >
+                            <FileText size={15} />
+                          </button>
+                          {pay.paymentStatus !== 'VERIFIED' && (
+                            <button
+                              onClick={() => handlePaymentAction(app.id, 'VERIFIED')}
+                              className="px-2 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold"
+                            >
+                              Verify Pay
+                            </button>
+                          )}
+                          {pay.paymentStatus === 'VERIFIED' && app.membershipStatus !== 'APPROVED' && (
+                            <button
+                              onClick={() => handleMembershipAction(app.id, 'APPROVED')}
+                              className="px-2 py-1 rounded-lg bg-[#09246B] text-white text-[11px] font-semibold"
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
+
+        {pagination.totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+            <span>
+              Page {page} of {pagination.totalPages} ({pagination.total} applications)
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-1.5 rounded-lg border disabled:opacity-40"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-1.5 rounded-lg border disabled:opacity-40"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Full Application Detail Modal */}
+      {(selectedDetail || loadingDetail) && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden my-8">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-[#09246B] text-white">
+              <div>
+                <h3 className="font-bold text-base">
+                  {selectedDetail ? `Application ${selectedDetail.serialNumber}` : 'Loading...'}
+                </h3>
+                <p className="text-xs text-blue-200">Complete Membership & Payment Verification</p>
+              </div>
+              <button
+                onClick={() => setSelectedDetail(null)}
+                className="p-1.5 rounded-lg hover:bg-white/10"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {loadingDetail ? (
+              <div className="p-12 text-center text-xs text-gray-400">Loading details...</div>
+            ) : (
+              selectedDetail && (
+                <div className="p-6 space-y-6 max-h-[78vh] overflow-y-auto text-xs sm:text-sm">
+                  {/* Top Info + Photo */}
+                  <div className="flex flex-col sm:flex-row gap-5 items-start">
+                    {selectedDetail.documents?.find((d) => d.docType === 'PHOTO')?.fileUrl && (
+                      <img
+                        src={selectedDetail.documents.find((d) => d.docType === 'PHOTO').fileUrl}
+                        alt={selectedDetail.applicantName}
+                        className="w-28 h-36 rounded-2xl object-cover border-2 border-[#09246B] flex-shrink-0"
+                      />
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 flex-1 text-xs">
+                      <p><strong>Applicant:</strong> {selectedDetail.applicantName}</p>
+                      <p><strong>Age / DOB:</strong> {selectedDetail.age} Yrs ({new Date(selectedDetail.dob).toLocaleDateString('en-IN')})</p>
+                      <p><strong>Father's Name:</strong> {selectedDetail.fatherName}</p>
+                      <p><strong>Blood Group:</strong> {selectedDetail.bloodGroup}</p>
+                      <p><strong>Qualification:</strong> {selectedDetail.educationalQualification}</p>
+                      <p><strong>Aadhaar (Masked):</strong> {selectedDetail.aadhaarMasked || 'Not Provided'}</p>
+                      <p><strong>Experience:</strong> {selectedDetail.experience}</p>
+                      <p><strong>Area RTO No:</strong> {selectedDetail.areaRtoNo}</p>
+                      <p><strong>Shop Name:</strong> {selectedDetail.shopName}</p>
+                      <p><strong>District:</strong> {selectedDetail.district?.nameEn || '—'}</p>
+                      <p className="sm:col-span-2"><strong>Shop Address:</strong> {selectedDetail.shopAddress}</p>
+                      <p><strong>Mobile:</strong> {selectedDetail.phone}</p>
+                      <p><strong>Alt Mobile:</strong> {selectedDetail.alternateMobile || '—'}</p>
+                      <p><strong>Email:</strong> {selectedDetail.email}</p>
+                      <p><strong>Insta/FB:</strong> {selectedDetail.socialId || '—'}</p>
+                      <p><strong>Refer Name:</strong> {selectedDetail.referName || '—'}</p>
+                    </div>
+                  </div>
+
+                  {/* Signature & Payment Screenshot */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+                    <div className="p-4 rounded-2xl bg-gray-50 space-y-2">
+                      <p className="text-xs font-bold text-gray-700">Payment Evidence</p>
+                      {selectedDetail.payments?.[0] && (
+                        <div className="space-y-1 text-xs">
+                          <p><strong>Plan:</strong> {selectedDetail.payments[0].planType}</p>
+                          <p><strong>Amount:</strong> ₹{selectedDetail.payments[0].amount}</p>
+                          <p><strong>UTR / Txn ID:</strong> <span className="font-mono font-bold">{selectedDetail.payments[0].upiTransactionId}</span></p>
+                          <p><strong>Status:</strong> {selectedDetail.payments[0].paymentStatus}</p>
+                          {selectedDetail.payments[0].rejectionReason && (
+                            <p className="text-red-600"><strong>Reason:</strong> {selectedDetail.payments[0].rejectionReason}</p>
+                          )}
+                        </div>
+                      )}
+                      {selectedDetail.payments?.[0]?.paymentScreenshotUrl && (
+                        <a
+                          href={selectedDetail.payments[0].paymentScreenshotUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block mt-2"
+                        >
+                          <img
+                            src={selectedDetail.payments[0].paymentScreenshotUrl}
+                            alt="Payment Screenshot"
+                            className="max-h-40 rounded-xl border object-contain"
+                          />
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-gray-50 space-y-2">
+                      <p className="text-xs font-bold text-gray-700">Signature & PDFs</p>
+                      {selectedDetail.documents?.find((d) => d.docType === 'SIGNATURE')?.fileUrl ? (
+                        <img
+                          src={selectedDetail.documents.find((d) => d.docType === 'SIGNATURE').fileUrl}
+                          alt="Signature"
+                          className="h-16 bg-white border rounded-xl p-2 object-contain"
+                        />
+                      ) : (
+                        <p className="text-xs text-gray-400">No signature uploaded</p>
+                      )}
+
+                      <div className="flex flex-col gap-2 pt-2">
+                        <button
+                          onClick={() => handleDownloadPdf(selectedDetail.serialNumber, 'application')}
+                          className="px-3 py-2 rounded-xl bg-[#09246B] text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                        >
+                          <FileText size={14} />
+                          <span>Download Application PDF</span>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadPdf(selectedDetail.serialNumber, 'receipt')}
+                          className="px-3 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                        >
+                          <Download size={14} />
+                          <span>Download Payment Receipt PDF</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Admin Action Buttons */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        disabled={processing}
+                        onClick={() => handlePaymentAction(selectedDetail.id, 'VERIFIED')}
+                        className="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold"
+                      >
+                        Verify Payment
+                      </button>
+                      <button
+                        disabled={processing}
+                        onClick={() =>
+                          setRejectModal({
+                            id: selectedDetail.id,
+                            type: 'payment',
+                            serialNumber: selectedDetail.serialNumber,
+                          })
+                        }
+                        className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+                      >
+                        Reject Payment
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        disabled={processing || selectedDetail.payments?.[0]?.paymentStatus !== 'VERIFIED'}
+                        onClick={() => handleMembershipAction(selectedDetail.id, 'APPROVED')}
+                        className="px-3.5 py-2 rounded-xl bg-[#09246B] text-white text-xs font-bold disabled:opacity-40"
+                        title="Verify payment first before approving"
+                      >
+                        Approve Membership
+                      </button>
+                      <button
+                        disabled={processing}
+                        onClick={() =>
+                          setRejectModal({
+                            id: selectedDetail.id,
+                            type: 'membership',
+                            serialNumber: selectedDetail.serialNumber,
+                          })
+                        }
+                        className="px-3.5 py-2 rounded-xl border border-red-300 text-red-700 text-xs font-bold"
+                      >
+                        Reject Application
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 className="text-base font-bold text-gray-900">
+              Reject {rejectModal.type === 'payment' ? 'Payment' : 'Membership'} ({rejectModal.serialNumber})
+            </h3>
+            <textarea
+              rows={3}
+              required
+              placeholder="Enter rejection reason (required)..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-xl border text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setRejectModal(null);
+                  setRejectionReason('');
+                }}
+                className="px-4 py-2 rounded-xl border text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={processing || !rejectionReason.trim()}
+                onClick={() =>
+                  rejectModal.type === 'payment'
+                    ? handlePaymentAction(rejectModal.id, 'REJECTED', rejectionReason)
+                    : handleMembershipAction(rejectModal.id, 'REJECTED', rejectionReason)
+                }
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold disabled:opacity-50"
+              >
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

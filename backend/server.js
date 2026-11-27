@@ -10,6 +10,7 @@ const compression = require('compression');
 // Route imports
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
+const membershipRoutes = require('./routes/membership.routes');
 const districtRoutes = require('./routes/district.routes');
 const memberRoutes = require('./routes/member.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
@@ -65,6 +66,7 @@ app.use('/api/admin/auth/login', authLimiter);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/membership', membershipRoutes);
 app.use('/api/districts', districtRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/whatsapp', whatsappRoutes);

@@ -7,6 +7,7 @@ import {
   Calendar,
   Image,
   Award,
+  Users,
   Settings,
   LogOut,
   Menu,
@@ -15,6 +16,7 @@ import {
 
 const ADMIN_LINKS = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Membership', path: '/admin/members', icon: Users },
   { label: 'News & Updates', path: '/admin/news', icon: Newspaper },
   { label: 'Events', path: '/admin/events', icon: Calendar },
   { label: 'Gallery', path: '/admin/gallery', icon: Image },
