@@ -4,6 +4,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 import { Award, Plus, Search, Edit2, Trash2, Upload, X, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -236,21 +237,20 @@ export default function ManageOfficeBearersPage() {
                   <tr key={b.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        {b.photoUrl ? (
-                          <img
-                            src={optimizeImageUrl(b.photoUrl, { width: 160 })}
-                            alt={b.nameEn}
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-10 h-10 rounded-full object-cover border"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-blue-50 text-[#123DAA] flex items-center justify-center font-bold text-xs">
-                            {(b.nameEn || 'A')[0]}
-                          </div>
-                        )}
+                        <SafeImage
+                          src={optimizeImageUrl(b.photoUrl, { width: 160 })}
+                          alt={b.nameEn}
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-10 h-10 rounded-full object-cover border flex-shrink-0"
+                          fallback={
+                            <div className="w-10 h-10 rounded-full bg-blue-50 text-[#123DAA] flex items-center justify-center font-bold text-xs flex-shrink-0">
+                              {(b.nameEn || 'A')[0]}
+                            </div>
+                          }
+                        />
                         <div>
                           <p className="font-bold text-gray-900">{b.nameEn}</p>
                           <p className="text-[11px] text-gray-400">{b.nameTa}</p>

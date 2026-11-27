@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 import {
   Newspaper,
   Plus,
@@ -285,19 +286,18 @@ export default function ManageNewsPage() {
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        {item.imageUrl ? (
-                          <img
-                            src={optimizeImageUrl(item.imageUrl, { width: 160 })}
-                            alt={item.titleEn}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0">
-                            <Newspaper size={18} />
-                          </div>
-                        )}
+                        <SafeImage
+                          src={optimizeImageUrl(item.imageUrl, { width: 160 })}
+                          alt={item.titleEn}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border"
+                          fallback={
+                            <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center flex-shrink-0">
+                              <Newspaper size={18} />
+                            </div>
+                          }
+                        />
                         <div className="min-w-0">
                           <p className="font-bold text-gray-900 truncate max-w-xs">{item.titleEn}</p>
                           <p className="text-[11px] text-gray-400 truncate max-w-xs">{item.titleTa}</p>

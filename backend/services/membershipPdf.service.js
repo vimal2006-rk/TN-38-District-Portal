@@ -1,6 +1,8 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const prisma = require('../config/database');
+const { getCachedMedia, cacheMediaItem } = require('../controllers/media.controller');
 
 const LOGO_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'logo.jpg');
 const QR_PATH = path.join(__dirname, '..', '..', 'frontend', 'public', 'tmssa-qr.png');
@@ -25,6 +27,23 @@ const getStaticAssetBuffer = (type) => {
 const loadImageBuffer = async (fileUrl) => {
   if (!fileUrl) return null;
   try {
+    // Check persistent PostgreSQL UploadedMedia store directly (no loopback HTTP needed)
+    if (fileUrl.includes('/media/')) {
+      const mediaId = fileUrl.split('/media/').pop().split('?')[0];
+      if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
+        const cached = getCachedMedia(mediaId);
+        if (cached?.data) return cached.data;
+        const record = await prisma.uploadedMedia.findUnique({
+          where: { id: mediaId },
+          select: { mimeType: true, data: true },
+        });
+        if (record?.data) {
+          const buf = Buffer.isBuffer(record.data) ? record.data : Buffer.from(record.data);
+          cacheMediaItem(mediaId, { mimeType: record.mimeType || 'image/jpeg', data: buf });
+          return buf;
+        }
+      }
+    }
     // Check local /uploads/ path first
     if (fileUrl.includes('/uploads/')) {
       const filename = fileUrl.split('/uploads/').pop();

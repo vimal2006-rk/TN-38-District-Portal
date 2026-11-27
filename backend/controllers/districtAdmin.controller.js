@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
+const { resolveUploadedFileUrl } = require('../middleware/upload.middleware');
 
 const getDistrictAdminsByDistrict = async (req, res, next) => {
   try {
@@ -70,7 +71,7 @@ const getDistrictAdminById = async (req, res, next) => {
 const createDistrictAdmin = async (req, res, next) => {
   try {
     const { districtId, nameEn, nameTa, designationEn, designationTa, phone, photoUrl, sortOrder } = req.body;
-    const imageUrl = req.file ? req.file.path : photoUrl || null;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : photoUrl || null;
 
     const admin = await prisma.districtAdministrator.create({
       data: {
@@ -91,7 +92,7 @@ const updateDistrictAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { nameEn, nameTa, designationEn, designationTa, phone, photoUrl, sortOrder, isActive } = req.body;
-    const imageUrl = req.file ? req.file.path : photoUrl;
+    const imageUrl = req.file ? resolveUploadedFileUrl(req, req.file) : photoUrl;
 
     const admin = await prisma.districtAdministrator.update({
       where: { id: parseInt(id, 10) },

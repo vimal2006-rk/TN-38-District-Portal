@@ -5,6 +5,7 @@ import { TN_DISTRICTS } from '../../utils/districtsData';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 
 const BearerCard = memo(function BearerCard({ b, isTa }) {
   return (
@@ -13,17 +14,20 @@ const BearerCard = memo(function BearerCard({ b, isTa }) {
         <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
           {isTa ? b.district?.nameTa || b.district?.nameEn : b.district?.nameEn || 'District'}
         </span>
-        {b.photoUrl && (
-          <img
-            src={optimizeImageUrl(b.photoUrl, { width: 160 })}
-            alt={b.nameEn}
-            width={44}
-            height={44}
-            loading="lazy"
-            decoding="async"
-            className="w-11 h-11 rounded-full object-cover border"
-          />
-        )}
+        <SafeImage
+          src={optimizeImageUrl(b.photoUrl, { width: 160 })}
+          alt={b.nameEn}
+          width={44}
+          height={44}
+          loading="lazy"
+          decoding="async"
+          className="w-11 h-11 rounded-full object-cover border flex-shrink-0"
+          fallback={
+            <div className="w-11 h-11 rounded-full bg-blue-50 text-[#123DAA] flex items-center justify-center font-bold text-xs flex-shrink-0">
+              {(b.nameEn || 'A')[0]}
+            </div>
+          }
+        />
       </div>
       <h3 className="text-base font-bold text-gray-900">
         {isTa ? b.nameTa || b.nameEn : b.nameEn}

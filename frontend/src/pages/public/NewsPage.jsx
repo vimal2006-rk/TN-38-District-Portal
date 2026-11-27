@@ -5,6 +5,7 @@ import { Newspaper, Calendar, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import SafeImage from '../../components/common/SafeImage';
 
 const NewsCard = memo(function NewsCard({ item, isTa }) {
   const dateStr = new Date(item.publishedAt || item.createdAt).toLocaleDateString();
@@ -18,19 +19,18 @@ const NewsCard = memo(function NewsCard({ item, isTa }) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between">
-      {item.imageUrl ? (
-        <img
-          src={optimizeImageUrl(item.imageUrl, { width: 640 })}
-          alt={isTa ? item.titleTa : item.titleEn}
-          loading="lazy"
-          decoding="async"
-          className="h-44 w-full object-cover"
-        />
-      ) : (
-        <div className="h-44 bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center text-white">
-          <Newspaper size={40} className="opacity-70" />
-        </div>
-      )}
+      <SafeImage
+        src={optimizeImageUrl(item.imageUrl, { width: 640 })}
+        alt={isTa ? item.titleTa : item.titleEn}
+        loading="lazy"
+        decoding="async"
+        className="h-44 w-full object-cover"
+        fallback={
+          <div className="h-44 bg-gradient-to-tr from-orange-400 to-amber-500 flex items-center justify-center text-white">
+            <Newspaper size={40} className="opacity-70" />
+          </div>
+        }
+      />
 
       <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
         <div>

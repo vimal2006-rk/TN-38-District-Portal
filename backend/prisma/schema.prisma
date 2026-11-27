@@ -434,3 +434,18 @@ model Translation {
   section   String?
   updatedAt DateTime @updatedAt
 }
+
+// ─────────────────────────────────────────────
+// UploadedMedia (Persistent Binary Storage Fallback)
+// ─────────────────────────────────────────────
+
+model UploadedMedia {
+  id        String   @id @default(uuid())
+  filename  String
+  mimeType  String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("uploaded_media")
+}

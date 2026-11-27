@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 const cloudinary = require('../config/cloudinary');
 const { logActivity } = require('../services/activityLog.service');
 const { resolveUploadedFileUrl, isCloudinaryConfigured } = require('../middleware/upload.middleware');
+const { evictCachedMedia } = require('./media.controller');
 const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const getAllGallery = async (req, res, next) => {
@@ -255,6 +256,15 @@ const deleteMedia = async (req, res, next) => {
         });
       } catch (cloudErr) {
         console.warn('Cloudinary delete warning:', cloudErr.message);
+      }
+    }
+
+    // Clean up persistent PostgreSQL media entry if stored in DB fallback
+    if (existing.mediaUrl && existing.mediaUrl.includes('/media/')) {
+      const mediaId = existing.mediaUrl.split('/media/').pop().split('?')[0];
+      if (/^[0-9a-f-]{16,64}$/i.test(mediaId)) {
+        evictCachedMedia(mediaId);
+        await prisma.uploadedMedia.deleteMany({ where: { id: mediaId } }).catch(() => {});
       }
     }
 

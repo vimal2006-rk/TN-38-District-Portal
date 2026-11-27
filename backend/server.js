@@ -22,6 +22,7 @@ const districtAdminRoutes = require('./routes/districtAdmin.routes');
 const officBearerRoutes = require('./routes/officBearer.routes');
 const contactRoutes = require('./routes/contact.routes');
 const translationRoutes = require('./routes/translation.routes');
+const mediaRoutes = require('./routes/media.routes');
 
 const errorHandler = require('./middleware/errorHandler.middleware');
 
@@ -35,7 +36,9 @@ app.use(compression({ threshold: 1024, level: 6 }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true, maxAge: 86400 }));
 
-// Serve uploaded media with browser cache when local storage fallback is used
+// Serve uploaded media permanently from DB store & legacy local uploads before rate limiting
+app.use('/api/media', mediaRoutes);
+app.use('/media', mediaRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '7d', etag: true }));
 
 // Body parsers
