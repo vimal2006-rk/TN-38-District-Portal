@@ -614,6 +614,60 @@ const approveOrRejectMembership = async (req, res, next) => {
   }
 };
 
+const getMembershipSettingsAdmin = async (req, res, next) => {
+  try {
+    const settings = await getOrCreateSettings();
+    return res.status(200).json({ success: true, data: settings });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateMembershipSettings = async (req, res, next) => {
+  try {
+    const existing = await getOrCreateSettings();
+    const {
+      annualFee,
+      halfYearlyFee,
+      upiId,
+      helpline1,
+      helpline2,
+      address,
+      termsText,
+      qrCodeUrl,
+    } = req.body;
+
+    const resolvedQr = req.file ? resolveUploadedFileUrl(req, req.file) : qrCodeUrl;
+
+    const updated = await prisma.membershipSetting.update({
+      where: { id: existing.id },
+      data: {
+        ...(annualFee !== undefined && { annualFee: Math.max(0, parseInt(annualFee, 10) || 1200) }),
+        ...(halfYearlyFee !== undefined && { halfYearlyFee: Math.max(0, parseInt(halfYearlyFee, 10) || 600) }),
+        ...(upiId !== undefined && { upiId: upiId.trim() }),
+        ...(helpline1 !== undefined && { helpline1: helpline1.trim() }),
+        ...(helpline2 !== undefined && { helpline2: helpline2.trim() }),
+        ...(address !== undefined && { address: address.trim() }),
+        ...(termsText !== undefined && { termsText: termsText.trim() }),
+        ...(resolvedQr && { qrCodeUrl: resolvedQr }),
+      },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'UPDATE_MEMBERSHIP_SETTINGS',
+      entityType: 'MEMBERSHIP_SETTINGS',
+      entityId: updated.id,
+      details: `Updated membership QR/Fee settings (Annual: ₹${updated.annualFee}, Half-Yearly: ₹${updated.halfYearlyFee}, UPI: ${updated.upiId})`,
+      req,
+    });
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMembershipConfig,
   registerMembership,
@@ -624,4 +678,6 @@ module.exports = {
   getMembershipApplicationDetail,
   verifyOrRejectPayment,
   approveOrRejectMembership,
+  getMembershipSettingsAdmin,
+  updateMembershipSettings,
 };

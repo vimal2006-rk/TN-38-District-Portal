@@ -38,6 +38,8 @@ const {
   getMembershipApplicationDetail,
   verifyOrRejectPayment,
   approveOrRejectMembership,
+  getMembershipSettingsAdmin,
+  updateMembershipSettings,
 } = require('../controllers/membership.controller');
 
 const { authenticate, authorizeRoles, optionalAuthenticate } = require('../middleware/auth.middleware');
@@ -99,5 +101,7 @@ router.get('/membership/applications', listMembershipApplications);
 router.get('/membership/applications/:id', getMembershipApplicationDetail);
 router.patch('/membership/applications/:id/payment', verifyOrRejectPayment);
 router.patch('/membership/applications/:id/status', approveOrRejectMembership);
+router.get('/membership/settings', getMembershipSettingsAdmin);
+router.put('/membership/settings', uploadSingle, updateMembershipSettings);
 
 module.exports = router;

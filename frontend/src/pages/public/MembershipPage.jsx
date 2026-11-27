@@ -399,6 +399,7 @@ export default function MembershipPage() {
                     </label>
                     <input
                       type="text"
+                      autoComplete="off"
                       placeholder="e.g. Diploma / B.Sc / HSC"
                       value={form.educationalQualification}
                       onChange={(e) => setForm({ ...form, educationalQualification: e.target.value })}
@@ -661,6 +662,9 @@ export default function MembershipPage() {
                       className="w-40 h-40 mx-auto object-contain"
                     />
                     <p className="text-[11px] font-bold text-[#09246B]">SCAN & PAY ₹{selectedAmount}</p>
+                    {config.upiId && (
+                      <p className="text-[10px] font-mono text-gray-500">UPI: {config.upiId}</p>
+                    )}
                   </div>
 
                   <div className="md:col-span-2 space-y-3">
