@@ -279,6 +279,7 @@ const PERSONAL_PUBLIC_TERMS = [
 export default function TermsAndConditionsPage() {
   const { i18n } = useTranslation();
   const isTa = i18n.language === 'ta';
+  const [activeTab, setActiveTab] = useState('terms');
   const [search, setSearch] = useState('');
 
   const filteredDistricts = useMemo(() => {
@@ -339,9 +340,37 @@ export default function TermsAndConditionsPage() {
               English
             </button>
           </div>
+          {/* Separated Section Tabs */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab('terms')}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition shadow-xs border ${
+                activeTab === 'terms'
+                  ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
+                  : 'bg-white text-[#09246B] border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <ShieldCheck size={16} />
+              <span>{isTa ? 'விதிமுறைகள் & நலத்திட்டங்கள்' : 'Terms & Welfare Benefits'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('leaders')}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition shadow-xs border ${
+                activeTab === 'leaders'
+                  ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
+                  : 'bg-white text-[#09246B] border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <Users size={16} />
+              <span>{isTa ? 'மாவட்ட நிர்வாகிகள் பட்டியல் (19)' : 'District Office Bearers List (19)'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Section 1: Terms & Welfare Benefits */}
+        {activeTab === 'terms' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Card A: Member Welfare */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-4">
@@ -399,8 +428,10 @@ export default function TermsAndConditionsPage() {
             </ul>
           </div>
         </div>
+        )}
 
         {/* Section 2: District Presidents, Secretaries & Treasurers List */}
+        {activeTab === 'leaders' && (
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-100 pb-5">
             <div className="flex items-start gap-3">
@@ -487,6 +518,7 @@ export default function TermsAndConditionsPage() {
             </p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
