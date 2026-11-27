@@ -728,6 +728,31 @@ const updateMembershipSettings = async (req, res, next) => {
   }
 };
 
+const deleteMembershipApplication = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const existing = await prisma.membershipApplication.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Membership application not found.' });
+    }
+
+    await prisma.membershipApplication.delete({ where: { id } });
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'DELETE_MEMBERSHIP',
+      entityType: 'MEMBERSHIP',
+      entityId: id,
+      details: `Deleted membership application ${existing.serialNumber} (${existing.applicantName})`,
+      req,
+    });
+
+    return res.status(200).json({ success: true, message: 'Membership application deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMembershipConfig,
   registerMembership,
@@ -740,4 +765,5 @@ module.exports = {
   approveOrRejectMembership,
   getMembershipSettingsAdmin,
   updateMembershipSettings,
+  deleteMembershipApplication,
 };

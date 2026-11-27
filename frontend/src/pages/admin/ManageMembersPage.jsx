@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   QrCode,
   Upload,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -58,6 +59,7 @@ export default function ManageMembersPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [rejectModal, setRejectModal] = useState(null); // { id, type: 'payment'|'membership', serialNumber }
   const [rejectionReason, setRejectionReason] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   // QR & Fee Settings modal
@@ -172,6 +174,22 @@ export default function ManageMembersPage() {
       if (selectedDetail?.id === id) openDetail(id);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Status update failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteApplication = async () => {
+    if (!deleteTarget) return;
+    setProcessing(true);
+    try {
+      await api.delete(`/admin/membership/applications/${deleteTarget.id}`);
+      toast.success(`Deleted ${deleteTarget.serialNumber}`);
+      if (selectedDetail?.id === deleteTarget.id) setSelectedDetail(null);
+      setDeleteTarget(null);
+      fetchAll();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed');
     } finally {
       setProcessing(false);
     }
@@ -424,6 +442,13 @@ export default function ManageMembersPage() {
                               Approve
                             </button>
                           )}
+                          <button
+                            onClick={() => setDeleteTarget(app)}
+                            title="Delete Application"
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -665,6 +690,34 @@ export default function ManageMembersPage() {
                 className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold disabled:opacity-50"
               >
                 Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
+            <h3 className="text-base font-bold text-gray-900">Delete Membership Application?</h3>
+            <p className="text-xs text-gray-500">
+              Are you sure you want to permanently delete{' '}
+              <strong>{deleteTarget.serialNumber}</strong> ({deleteTarget.applicantName})? This will also remove its payment and document records.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 rounded-xl border text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={processing}
+                onClick={handleDeleteApplication}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50"
+              >
+                {processing ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
