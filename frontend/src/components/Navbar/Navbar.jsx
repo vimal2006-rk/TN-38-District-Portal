@@ -160,15 +160,13 @@ export default function Navbar() {
                 );
               })}
 
-              {isAuthenticated && (
-                <NavLink
-                  to="/admin/dashboard"
-                  className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center gap-1.5 ml-auto transition-all"
-                >
-                  <Shield size={13} />
-                  <span>Admin</span>
-                </NavLink>
-              )}
+              <NavLink
+                to={isAuthenticated ? '/admin/dashboard' : '/admin/login'}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center gap-1.5 ml-auto transition-all whitespace-nowrap"
+              >
+                <Shield size={13} className="text-[#F07818]" />
+                <span>{isAuthenticated ? 'Admin' : 'Admin Login'}</span>
+              </NavLink>
             </div>
 
           </div>
@@ -211,7 +209,7 @@ export default function Navbar() {
                     end={link.path === '/'}
                     onClick={() => setMenuOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-xs xs:text-sm font-semibold transition-all duration-150 active:scale-[0.98] min-h-[50px] border ${
+                      `flex items-center gap-2 px-2.5 xs:px-3 py-3 rounded-2xl text-[12px] xs:text-sm font-semibold transition-all duration-150 active:scale-[0.98] min-h-[50px] border ${
                         isActive
                           ? 'bg-[#F07818] text-white border-[#F07818] shadow-md'
                           : 'bg-[#123DAA]/60 text-blue-50 border-white/10 hover:bg-[#123DAA] hover:text-white'
@@ -219,24 +217,22 @@ export default function Navbar() {
                     }
                   >
                     <span className="p-1.5 rounded-lg bg-white/15 flex-shrink-0">
-                      <Icon size={16} />
+                      <Icon size={15} />
                     </span>
-                    <span className="truncate">{t(link.key, link.label)}</span>
+                    <span className="leading-tight">{t(link.key, link.label)}</span>
                   </NavLink>
                 );
               })}
             </div>
 
-            {isAuthenticated && (
-              <NavLink
-                to="/admin/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white mt-3 min-h-[46px] hover:bg-white/25 transition-all"
-              >
-                <Shield size={16} className="text-[#F07818]" />
-                <span>Admin Console / நிர்வாக பலகம்</span>
-              </NavLink>
-            )}
+            <NavLink
+              to={isAuthenticated ? '/admin/dashboard' : '/admin/login'}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 text-sm font-bold px-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white mt-3 min-h-[46px] hover:bg-white/25 transition-all"
+            >
+              <Shield size={16} className="text-[#F07818]" />
+              <span>Admin Panel / நிர்வாக பலகம்</span>
+            </NavLink>
 
             <div className="pt-4 border-t border-blue-700/60 mt-4 px-3 text-xs text-blue-300 text-center">
               © {new Date().getFullYear()} Tamilnadu Mobile Sales and Service Association
