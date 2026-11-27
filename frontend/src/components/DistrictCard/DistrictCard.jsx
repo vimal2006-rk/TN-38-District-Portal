@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Users, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { TN_DISTRICTS } from '../../utils/districtsData';
 
 export default function DistrictCard({ district }) {
@@ -56,14 +56,6 @@ export default function DistrictCard({ district }) {
             <p className="text-xs mb-3 font-medium" style={{ color: '#64748B' }}>
               {district.nameTa}
             </p>
-          )}
-
-          {/* Member count */}
-          {district._count?.members !== undefined && (
-            <div className="flex items-center gap-1.5 text-xs mb-4" style={{ color: '#64748B' }}>
-              <Users size={14} style={{ color: '#123DAA' }} />
-              <span>{district._count.members} Members</span>
-            </div>
           )}
         </div>
 
