@@ -4,6 +4,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { clearCachedData } from '../../utils/clientCache';
 import { convertImageToWebp } from '../../utils/imageCompressor';
+import ResponsiveSelect from '../../components/common/ResponsiveSelect';
 import {
   Users,
   UserPlus,
@@ -409,43 +410,55 @@ export default function ManageMembersPage() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select
+        <div className="grid grid-cols-1 xs:grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 w-full md:w-auto">
+          <ResponsiveSelect
             value={paymentFilter}
-            onChange={(e) => {
-              setPaymentFilter(e.target.value);
+            onChange={(val) => {
+              setPaymentFilter(val);
               setPage(1);
             }}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
-          >
-            <option value="ALL">All Payments</option>
-            <option value="PAYMENT_SUBMITTED">Payment Submitted</option>
-            <option value="VERIFIED">Verified</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
+            options={[
+              { value: 'ALL', label: 'All Payments' },
+              { value: 'PAYMENT_SUBMITTED', label: 'Payment Submitted' },
+              { value: 'VERIFIED', label: 'Verified' },
+              { value: 'REJECTED', label: 'Rejected' },
+            ]}
+            title="Filter by Payment Status"
+            searchable={false}
+            accent="blue"
+            className="w-full sm:w-44 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          />
 
-          <select
+          <ResponsiveSelect
             value={memberFilter}
-            onChange={(e) => {
-              setMemberFilter(e.target.value);
+            onChange={(val) => {
+              setMemberFilter(val);
               setPage(1);
             }}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
+            options={[
+              { value: 'ALL', label: 'All Statuses' },
+              { value: 'PENDING', label: 'Pending' },
+              { value: 'APPROVED', label: 'Approved' },
+              { value: 'REJECTED', label: 'Rejected' },
+            ]}
+            title="Filter by Membership Status"
+            searchable={false}
+            accent="blue"
+            className="w-full sm:w-40 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          />
 
-          <select
+          <ResponsiveSelect
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
-          >
-            <option value="desc">Newest First</option>
-            <option value="asc">Oldest First</option>
-          </select>
+            onChange={(val) => setSortOrder(val)}
+            options={[
+              { value: 'desc', label: 'Newest First' },
+              { value: 'asc', label: 'Oldest First' },
+            ]}
+            title="Sort Order"
+            searchable={false}
+            accent="blue"
+            className="w-full sm:w-36 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold"
+          />
         </div>
       </div>
 

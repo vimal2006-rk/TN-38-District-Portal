@@ -7,6 +7,7 @@ import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import SafeImage from '../../components/common/SafeImage';
+import ResponsiveSelect from '../../components/common/ResponsiveSelect';
 
 const BearerCard = memo(function BearerCard({ b, isTa }) {
   return (
@@ -57,7 +58,20 @@ export default function OfficeBearersPage() {
   const [bearers, setBearers] = useState(initialCached || []);
   const [loading, setLoading] = useState(!initialCached);
 
-  const handleDistrictChange = useCallback((e) => setSelectedDistrict(e.target.value), []);
+  const handleDistrictChange = useCallback((val) => setSelectedDistrict(val), []);
+
+  const districtOptions = useMemo(
+    () => [
+      { value: 'all', label: isTa ? 'அனைத்து மாவட்டங்களும்' : 'All Districts', searchText: 'all districts அனைத்தும்' },
+      ...TN_DISTRICTS.map((d) => ({
+        value: d.nameEn,
+        label: isTa ? d.nameTa : d.nameEn,
+        subLabel: isTa ? d.nameEn : d.nameTa,
+        searchText: `${d.nameEn} ${d.nameTa} ${d.slug}`,
+      })),
+    ],
+    [isTa]
+  );
 
   const fetchBearers = useCallback((isActive = () => true) => {
     api
@@ -106,19 +120,16 @@ export default function OfficeBearersPage() {
         </p>
 
         {/* Filter */}
-        <div className="pt-4 max-w-xs mx-auto">
-          <select
+        <div className="pt-4 w-full max-w-sm mx-auto">
+          <ResponsiveSelect
             value={selectedDistrict}
             onChange={handleDistrictChange}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-          >
-            <option value="all">{isTa ? 'அனைத்து மாவட்டங்களும்' : 'All Districts'}</option>
-            {TN_DISTRICTS.map((d) => (
-              <option key={d.id} value={d.nameEn}>
-                {isTa ? d.nameTa : d.nameEn}
-              </option>
-            ))}
-          </select>
+            options={districtOptions}
+            title={isTa ? 'மாவட்டத்தைத் தேர்ந்தெடுக்கவும்' : 'Select District'}
+            searchPlaceholder={isTa ? 'மாவட்டம் தேடுங்கள்...' : 'Search district...'}
+            accent="orange"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white shadow-xs font-medium text-gray-800"
+          />
         </div>
       </div>
 

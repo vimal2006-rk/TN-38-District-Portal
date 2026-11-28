@@ -6,6 +6,7 @@ import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { convertImageToWebp } from '../../utils/imageCompressor';
 import SafeImage from '../../components/common/SafeImage';
+import ResponsiveSelect from '../../components/common/ResponsiveSelect';
 import { Award, Plus, Search, Edit2, Trash2, Upload, X, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -200,18 +201,23 @@ export default function ManageOfficeBearersPage() {
           />
         </div>
 
-        <select
+        <ResponsiveSelect
           value={districtFilter}
-          onChange={(e) => setDistrictFilter(e.target.value)}
-          className="px-3.5 py-2 rounded-xl border border-gray-200 text-xs sm:text-sm bg-white"
-        >
-          <option value="all">All 38 Districts</option>
-          {TN_DISTRICTS.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.nameEn}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => setDistrictFilter(val)}
+          options={[
+            { value: 'all', label: 'All 38 Districts', searchText: 'all 38 districts' },
+            ...TN_DISTRICTS.map((d) => ({
+              value: String(d.id),
+              label: d.nameEn,
+              subLabel: d.nameTa,
+              searchText: `${d.nameEn} ${d.nameTa} ${d.slug}`,
+            })),
+          ]}
+          title="Filter by District"
+          searchPlaceholder="Search district..."
+          accent="blue"
+          className="w-full sm:w-52 px-3.5 py-2 rounded-xl border border-gray-200 text-xs sm:text-sm bg-white"
+        />
       </div>
 
       {/* Table */}
@@ -327,17 +333,19 @@ export default function ManageOfficeBearersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">District *</label>
-                  <select
-                    value={form.districtId}
-                    onChange={(e) => setForm({ ...form, districtId: e.target.value })}
+                  <ResponsiveSelect
+                    value={String(form.districtId || '')}
+                    onChange={(val) => setForm({ ...form, districtId: String(val) })}
+                    options={TN_DISTRICTS.map((d) => ({
+                      value: String(d.id),
+                      label: `${d.nameEn} (${d.nameTa})`,
+                      searchText: `${d.nameEn} ${d.nameTa} ${d.slug}`,
+                    }))}
+                    title="Select District"
+                    searchPlaceholder="Search district..."
+                    accent="blue"
                     className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm bg-white"
-                  >
-                    {TN_DISTRICTS.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nameEn} ({d.nameTa})
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Phone Number</label>

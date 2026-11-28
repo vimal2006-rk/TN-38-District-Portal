@@ -17,6 +17,7 @@ import { TN_DISTRICTS } from '../../utils/districtsData';
 import { getCachedData, setCachedData, clearCachedData } from '../../utils/clientCache';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
+import ResponsiveSelect from '../../components/common/ResponsiveSelect';
 import api from '../../services/api';
 import { removeSignatureBackground } from '../../utils/signatureProcessor';
 
@@ -483,17 +484,15 @@ export default function MembershipPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-[#172554] mb-1">Blood Group *</label>
-                    <select
+                    <ResponsiveSelect
                       value={form.bloodGroup}
-                      onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
+                      onChange={(val) => setForm({ ...form, bloodGroup: val })}
+                      options={BLOOD_GROUPS.map((bg) => ({ value: bg, label: bg }))}
+                      title="Select Blood Group"
+                      searchable={false}
+                      accent="blue"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white"
-                    >
-                      {BLOOD_GROUPS.map((bg) => (
-                        <option key={bg} value={bg}>
-                          {bg}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div>
@@ -614,17 +613,19 @@ export default function MembershipPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-[#172554] mb-1">District *</label>
-                  <select
-                    value={form.districtId}
-                    onChange={(e) => setForm({ ...form, districtId: e.target.value })}
+                  <ResponsiveSelect
+                    value={String(form.districtId || '')}
+                    onChange={(val) => setForm({ ...form, districtId: String(val) })}
+                    options={TN_DISTRICTS.map((d) => ({
+                      value: String(d.id),
+                      label: `${d.nameEn} (${d.nameTa})`,
+                      searchText: `${d.nameEn} ${d.nameTa} ${d.slug}`,
+                    }))}
+                    title="Select District"
+                    searchPlaceholder="Search district..."
+                    accent="blue"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm bg-white"
-                  >
-                    {TN_DISTRICTS.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nameEn} ({d.nameTa})
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

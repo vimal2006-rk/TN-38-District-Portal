@@ -4,6 +4,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { clearCachedData } from '../../utils/clientCache';
 import { optimizeImageUrl } from '../../utils/imageOptimizer';
 import { convertImageToWebp } from '../../utils/imageCompressor';
+import ResponsiveSelect from '../../components/common/ResponsiveSelect';
 import {
   Calendar,
   Plus,
@@ -475,14 +476,18 @@ export default function ManageEventsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Event Status</label>
-                  <select
+                  <ResponsiveSelect
                     value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    onChange={(val) => setForm({ ...form, status: val })}
+                    options={[
+                      { value: 'UPCOMING', label: 'Upcoming' },
+                      { value: 'COMPLETED', label: 'Completed' },
+                    ]}
+                    title="Select Event Status"
+                    searchable={false}
+                    accent="blue"
                     className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-sm bg-white"
-                  >
-                    <option value="UPCOMING">Upcoming</option>
-                    <option value="COMPLETED">Completed</option>
-                  </select>
+                  />
                 </div>
               </div>
 
