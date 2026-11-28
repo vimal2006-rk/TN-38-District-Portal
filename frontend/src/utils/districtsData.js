@@ -31,14 +31,14 @@ export const TN_DISTRICTS = [
     whatsappLink: "https://chat.whatsapp.com/FccRMP62ETwIUJeEDZJqsh?s=cl&p=a&iam=2",
     whatsappLinks: [
       {
-        name: "Service (No Sales)",
-        nameTa: "சர்வீஸ் (சேல்ஸ் தடை)",
+        name: "Service",
+        nameTa: "சர்வீஸ்",
         fullName: "(சர்வீஸ்) தமிழ்நாடு மொபைல் சேல்ஸ் மற்றும் சர்வீஸ் அசோசியேஷன் இந்த குரூப்பில் சேல்ஸ் தடை",
         url: "https://chat.whatsapp.com/FccRMP62ETwIUJeEDZJqsh?s=cl&p=a&iam=2",
       },
       {
-        name: "Sales (No Service/Spare)",
-        nameTa: "சேல்ஸ் (சர்வீஸ் ஸ்பேர் தடை)",
+        name: "Sales",
+        nameTa: "சேல்ஸ்",
         fullName: "(சேல்ஸ்) Tamilnadu sales and service association சர்வீஸ் ஸ்பேர் இந்த குரூப்பில் தடை",
         url: "https://chat.whatsapp.com/CKRyy8COdZwEeJhzlWkDuX?s=cl&p=a&iam=2",
       },
