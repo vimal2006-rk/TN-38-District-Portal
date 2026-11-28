@@ -10,7 +10,11 @@ import api from '../../services/api';
 const mergeWithLocal = (apiDistricts) =>
   apiDistricts.map((d) => {
     const local = findLocalDistrict(d);
-    return { ...d, whatsappLink: local?.whatsappLink || d.whatsappLink };
+    return {
+      ...d,
+      whatsappLink: local?.whatsappLink || d.whatsappLink,
+      whatsappLinks: local?.whatsappLinks || d.whatsappLinks,
+    };
   });
 
 export default function DistrictDirectoryPage() {

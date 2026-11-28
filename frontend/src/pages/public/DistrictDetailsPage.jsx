@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Phone, ExternalLink, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { findLocalDistrict } from '../../utils/districtsData';
+import { findLocalDistrict, getDistrictWhatsappLinks } from '../../utils/districtsData';
 import { getCachedData, setCachedData } from '../../utils/clientCache';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import api from '../../services/api';
@@ -127,18 +127,27 @@ export default function DistrictDetailsPage() {
             </p>
           </div>
 
-          <div className="flex flex-col xs:flex-row flex-wrap gap-3 w-full md:w-auto">
-            {district.whatsappGroup?.inviteLink && (
+          <div className="flex flex-col xs:flex-row flex-wrap gap-2.5 w-full md:w-auto">
+            {getDistrictWhatsappLinks(district).links.map((grp, idx, arr) => (
               <a
-                href={district.whatsappGroup.inviteLink}
+                key={grp.url}
+                href={grp.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#16A34A] hover:bg-[#15803d]"
+                className="inline-flex items-center justify-center gap-2 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#16A34A] hover:bg-[#15803d]"
               >
-                <ExternalLink size={16} />
-                <span>WhatsApp Group</span>
+                <ExternalLink size={15} />
+                <span>
+                  {arr.length > 1
+                    ? isTa
+                      ? `வாட்ஸ்அப் குழு ${idx + 1}`
+                      : `WhatsApp Group ${idx + 1}`
+                    : isTa
+                    ? 'வாட்ஸ்அப் குழு'
+                    : 'WhatsApp Group'}
+                </span>
               </a>
-            )}
+            ))}
             <Link
               to="/membership"
               className="inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#F07818] hover:bg-[#d4660f]"

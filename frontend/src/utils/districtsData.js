@@ -21,7 +21,37 @@ export const TN_DISTRICTS = [
   { id: 20, nameEn: "Ramanathapuram", nameTa: "இராமநாதபுரம்", slug: "ramanathapuram", code: "RMD", members: 190 },
   { id: 21, nameEn: "Ranipet", nameTa: "ராணிப்பேட்டை", slug: "ranipet", code: "RNP", members: 210, whatsappLink: "https://chat.whatsapp.com/DCrsql7sLT535sjbaAXu7z" },
   { id: 22, nameEn: "Salem", nameTa: "சேலம்", slug: "salem", code: "SLM", members: 640 },
-  { id: 23, nameEn: "Sivaganga", nameTa: "சிவகங்கை", slug: "sivaganga", code: "SVG", members: 185, whatsappLink: "https://chat.whatsapp.com/KPlvfvljGxsHJdxBTTu3BS" },
+  {
+    id: 23,
+    nameEn: "Sivaganga",
+    nameTa: "சிவகங்கை",
+    slug: "sivaganga",
+    code: "SVG",
+    members: 185,
+    whatsappLink: "https://chat.whatsapp.com/KPlvfvljGxsHJdxBTTu3BS",
+    whatsappLinks: [
+      {
+        name: "Sivaganga Group 1",
+        nameTa: "சிவகங்கை குழு 1",
+        url: "https://chat.whatsapp.com/KPlvfvljGxsHJdxBTTu3BS",
+      },
+      {
+        name: "Sivaganga Group 2",
+        nameTa: "சிவகங்கை குழு 2",
+        url: "https://chat.whatsapp.com/FccRMP62ETwIUJeEDZJqsh?s=cl&p=a&iam=2",
+      },
+      {
+        name: "Sivaganga Group 3",
+        nameTa: "சிவகங்கை குழு 3",
+        url: "https://chat.whatsapp.com/CKRyy8COdZwEeJhzlWkDuX?s=cl&p=a&iam=2",
+      },
+      {
+        name: "Sivaganga Group 4",
+        nameTa: "சிவகங்கை குழு 4",
+        url: "https://chat.whatsapp.com/I1JSLb2OL887Q3xRilA7B8?s=cl&p=a&iam=2",
+      },
+    ],
+  },
   { id: 24, nameEn: "Tenkasi", nameTa: "தென்காசி", slug: "tenkasi", code: "TKS", members: 230, whatsappLink: "https://chat.whatsapp.com/JbR35gmqzdb0Er5H2ugPaN" },
   { id: 25, nameEn: "Thanjavur", nameTa: "தஞ்சாவூர்", slug: "thanjavur", code: "TNJ", members: 420, whatsappLink: "https://chat.whatsapp.com/HXCHDwydTIKI3yLbwe75uU" },
   { id: 26, nameEn: "Theni", nameTa: "தேனி", slug: "theni", code: "THN", members: 205, whatsappLink: "https://chat.whatsapp.com/D6CiZtqxOQz52Gg8RWc6MH" },
@@ -53,4 +83,37 @@ export const findLocalDistrict = (districtOrSlug) => {
     (districtOrSlug.slug && DISTRICT_BY_SLUG.get(districtOrSlug.slug)) ||
     (districtOrSlug.id !== undefined && DISTRICT_BY_ID.get(String(districtOrSlug.id)))
   );
+};
+
+export const getDistrictWhatsappLinks = (district) => {
+  const localData = findLocalDistrict(district);
+  const slug = district?.slug || localData?.slug || 'district';
+  const nameEn = district?.nameEn || localData?.nameEn || 'District';
+  const nameTa = district?.nameTa || localData?.nameTa || nameEn;
+
+  const multi = localData?.whatsappLinks || district?.whatsappLinks;
+  if (Array.isArray(multi) && multi.length > 0) {
+    return { hasRealLink: true, links: multi };
+  }
+
+  const realSingle = localData?.whatsappLink || district?.whatsappLink;
+  if (realSingle) {
+    return {
+      hasRealLink: true,
+      links: [{ name: `${nameEn} Group`, nameTa: `${nameTa} குழு`, url: realSingle }],
+    };
+  }
+
+  const apiInvite = district?.whatsappGroup?.inviteLink;
+  const isApiReal = Boolean(apiInvite && !apiInvite.includes('placeholder-'));
+  return {
+    hasRealLink: isApiReal,
+    links: [
+      {
+        name: `${nameEn} Group`,
+        nameTa: `${nameTa} குழு`,
+        url: apiInvite || `https://chat.whatsapp.com/invite-${slug}`,
+      },
+    ],
+  };
 };

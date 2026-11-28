@@ -2,24 +2,17 @@ import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
-import { findLocalDistrict } from '../../utils/districtsData';
+import { getDistrictWhatsappLinks } from '../../utils/districtsData';
 
 function DistrictCard({ district }) {
   const { i18n } = useTranslation();
   const isTamil = i18n.language === 'ta';
   const name = isTamil ? district.nameTa : district.nameEn;
 
-  const { hasRealLink, whatsappLink } = useMemo(() => {
-    const localData = findLocalDistrict(district);
-    const realLink = localData?.whatsappLink || null;
-    return {
-      hasRealLink: Boolean(realLink),
-      whatsappLink:
-        realLink ||
-        district.whatsappGroup?.inviteLink ||
-        `https://chat.whatsapp.com/invite-${district.slug}`,
-    };
-  }, [district]);
+  const { hasRealLink, links } = useMemo(
+    () => getDistrictWhatsappLinks(district),
+    [district]
+  );
 
   return (
     <div
@@ -69,18 +62,35 @@ function DistrictCard({ district }) {
             View Details
           </Link>
 
-          {/* Secondary Join WhatsApp Button: Green */}
-          <a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center justify-center gap-1.5 text-sm font-semibold rounded-lg py-2 transition-all shadow-sm text-white ${
-              hasRealLink ? 'bg-[#16A34A] hover:bg-[#15803d]' : 'bg-[#94a3b8] hover:bg-[#64748b]'
-            }`}
-          >
-            <ExternalLink size={14} />
-            <span>Join WhatsApp</span>
-          </a>
+          {/* Secondary Join WhatsApp Button(s): Green */}
+          {links.length > 1 ? (
+            <div className="grid grid-cols-2 gap-1.5">
+              {links.map((grp, idx) => (
+                <a
+                  key={grp.url}
+                  href={grp.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold rounded-lg py-2 px-1.5 transition-all shadow-sm text-white bg-[#16A34A] hover:bg-[#15803d]"
+                >
+                  <ExternalLink size={12} />
+                  <span>{isTamil ? `குழு ${idx + 1}` : `Group ${idx + 1}`}</span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <a
+              href={links[0]?.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center justify-center gap-1.5 text-sm font-semibold rounded-lg py-2 transition-all shadow-sm text-white ${
+                hasRealLink ? 'bg-[#16A34A] hover:bg-[#15803d]' : 'bg-[#94a3b8] hover:bg-[#64748b]'
+              }`}
+            >
+              <ExternalLink size={14} />
+              <span>Join WhatsApp</span>
+            </a>
+          )}
         </div>
       </div>
     </div>

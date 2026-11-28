@@ -7,7 +7,8 @@ export default function ManageWhatsAppPage() {
   const [districts, setDistricts] = useState(
     TN_DISTRICTS.map(d => ({
       ...d,
-      inviteLink: d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`
+      inviteLink: d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`,
+      inviteLinks: d.whatsappLinks || (d.whatsappLink ? [{ name: `${d.nameEn} Group`, url: d.whatsappLink }] : []),
     }))
   );
   const [editing, setEditing] = useState(null);
@@ -42,11 +43,23 @@ export default function ManageWhatsAppPage() {
                 <tr key={d.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4 font-mono text-gray-400">{d.id}</td>
                   <td className="py-3 px-4 font-bold text-gray-900">{d.nameEn} ({d.nameTa})</td>
-                  <td className="py-3 px-4 font-mono text-blue-600 truncate max-w-xs">
-                    <a href={d.inviteLink} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-1">
-                      <span>{d.inviteLink}</span>
-                      <ExternalLink size={12} />
-                    </a>
+                  <td className="py-3 px-4 font-mono text-blue-600 max-w-xs">
+                    {d.inviteLinks.length > 1 ? (
+                      <div className="space-y-1">
+                        {d.inviteLinks.map((grp, idx) => (
+                          <a key={grp.url} href={grp.url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-1 truncate">
+                            <span className="text-green-700 font-semibold">G{idx + 1}:</span>
+                            <span className="truncate">{grp.url}</span>
+                            <ExternalLink size={12} className="flex-shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <a href={d.inviteLink} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-1 truncate">
+                        <span className="truncate">{d.inviteLink}</span>
+                        <ExternalLink size={12} className="flex-shrink-0" />
+                      </a>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button

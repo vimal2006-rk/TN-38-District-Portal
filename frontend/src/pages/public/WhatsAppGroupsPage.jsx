@@ -1,11 +1,12 @@
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, ExternalLink, Search } from 'lucide-react';
-import { TN_DISTRICTS } from '../../utils/districtsData';
+import { TN_DISTRICTS, getDistrictWhatsappLinks } from '../../utils/districtsData';
 
 const WhatsappGroupCard = memo(function WhatsappGroupCard({ d, isTa }) {
   const name = isTa ? d.nameTa : d.nameEn;
-  const link = d.whatsappLink || `https://chat.whatsapp.com/invite-${d.slug}`;
+  const { hasRealLink, links } = getDistrictWhatsappLinks(d);
+  const hasMultiple = links.length > 1;
 
   return (
     <div
@@ -16,7 +17,7 @@ const WhatsappGroupCard = memo(function WhatsappGroupCard({ d, isTa }) {
         <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#64748B' }}>
           <span className="font-mono flex items-center gap-1.5">
             #{d.id < 10 ? `0${d.id}` : d.id}
-            {d.whatsappLink && (
+            {hasRealLink && (
               <span
                 className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-green-200"
                 style={{ backgroundColor: '#16A34A' }}
@@ -28,22 +29,43 @@ const WhatsappGroupCard = memo(function WhatsappGroupCard({ d, isTa }) {
             className="px-2 py-0.5 rounded-full font-bold text-[10px]"
             style={{ backgroundColor: '#DCFCE7', color: '#16A34A' }}
           >
-            OFFICIAL
+            {hasMultiple ? `${links.length} GROUPS` : 'OFFICIAL'}
           </span>
         </div>
         <h3 className="text-base font-bold" style={{ color: '#172554' }}>{name}</h3>
-        <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{d.nameEn} District Group</p>
+        <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>
+          {hasMultiple
+            ? `${d.nameEn} (${links.length} District Groups)`
+            : `${d.nameEn} District Group`}
+        </p>
       </div>
 
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full py-2.5 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
-      >
-        <ExternalLink size={14} />
-        <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
-      </a>
+      {hasMultiple ? (
+        <div className="grid grid-cols-2 gap-1.5">
+          {links.map((group, idx) => (
+            <a
+              key={group.url}
+              href={group.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-2 px-2.5 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
+            >
+              <ExternalLink size={12} />
+              <span>{isTa ? `குழு ${idx + 1}` : `Group ${idx + 1}`}</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <a
+          href={links[0]?.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full py-2.5 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
+        >
+          <ExternalLink size={14} />
+          <span>{isTa ? 'குழுவில் இணையவும்' : 'Join WhatsApp Group'}</span>
+        </a>
+      )}
     </div>
   );
 });
