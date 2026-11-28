@@ -64,17 +64,18 @@ function DistrictCard({ district }) {
 
           {/* Secondary Join WhatsApp Button(s): Green */}
           {links.length > 1 ? (
-            <div className="grid grid-cols-2 gap-1.5">
-              {links.map((grp, idx) => (
+            <div className="flex flex-col gap-1.5">
+              {links.map((grp) => (
                 <a
                   key={grp.url}
                   href={grp.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1 text-xs font-semibold rounded-lg py-2 px-1.5 transition-all shadow-sm text-white bg-[#16A34A] hover:bg-[#15803d]"
+                  title={grp.fullName || (isTamil ? grp.nameTa || grp.name : grp.name)}
+                  className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg py-1.5 px-2.5 transition-all shadow-sm text-white bg-[#16A34A] hover:bg-[#15803d]"
                 >
-                  <ExternalLink size={12} />
-                  <span>{isTamil ? `குழு ${idx + 1}` : `Group ${idx + 1}`}</span>
+                  <ExternalLink size={12} className="flex-shrink-0" />
+                  <span className="truncate">{isTamil ? grp.nameTa || grp.name : grp.name}</span>
                 </a>
               ))}
             </div>

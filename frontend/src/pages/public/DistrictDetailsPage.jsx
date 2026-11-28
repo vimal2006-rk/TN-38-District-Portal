@@ -134,14 +134,15 @@ export default function DistrictDetailsPage() {
                 href={grp.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={grp.fullName || (isTa ? grp.nameTa || grp.name : grp.name)}
                 className="inline-flex items-center justify-center gap-2 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition text-xs sm:text-sm w-full xs:w-auto bg-[#16A34A] hover:bg-[#15803d]"
               >
-                <ExternalLink size={15} />
+                <ExternalLink size={15} className="flex-shrink-0" />
                 <span>
                   {arr.length > 1
                     ? isTa
-                      ? `வாட்ஸ்அப் குழு ${idx + 1}`
-                      : `WhatsApp Group ${idx + 1}`
+                      ? grp.nameTa || grp.name || `வாட்ஸ்அப் குழு ${idx + 1}`
+                      : grp.name || `WhatsApp Group ${idx + 1}`
                     : isTa
                     ? 'வாட்ஸ்அப் குழு'
                     : 'WhatsApp Group'}

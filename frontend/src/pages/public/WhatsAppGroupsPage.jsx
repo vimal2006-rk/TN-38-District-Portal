@@ -41,17 +41,18 @@ const WhatsappGroupCard = memo(function WhatsappGroupCard({ d, isTa }) {
       </div>
 
       {hasMultiple ? (
-        <div className="grid grid-cols-2 gap-1.5">
-          {links.map((group, idx) => (
+        <div className="flex flex-col gap-1.5">
+          {links.map((group) => (
             <a
               key={group.url}
               href={group.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="py-2 px-2.5 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
+              title={group.fullName || (isTa ? group.nameTa || group.name : group.name)}
+              className="w-full py-2 px-3 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm bg-[#16A34A] hover:bg-[#15803d]"
             >
-              <ExternalLink size={12} />
-              <span>{isTa ? `குழு ${idx + 1}` : `Group ${idx + 1}`}</span>
+              <ExternalLink size={12} className="flex-shrink-0" />
+              <span className="truncate">{isTa ? group.nameTa || group.name : group.name}</span>
             </a>
           ))}
         </div>

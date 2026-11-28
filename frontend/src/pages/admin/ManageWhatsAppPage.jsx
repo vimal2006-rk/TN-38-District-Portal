@@ -46,9 +46,9 @@ export default function ManageWhatsAppPage() {
                   <td className="py-3 px-4 font-mono text-blue-600 max-w-xs">
                     {d.inviteLinks.length > 1 ? (
                       <div className="space-y-1">
-                        {d.inviteLinks.map((grp, idx) => (
+                        {d.inviteLinks.map((grp) => (
                           <a key={grp.url} href={grp.url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-1 truncate">
-                            <span className="text-green-700 font-semibold">G{idx + 1}:</span>
+                            <span className="text-green-700 font-semibold flex-shrink-0">{grp.name}:</span>
                             <span className="truncate">{grp.url}</span>
                             <ExternalLink size={12} className="flex-shrink-0" />
                           </a>
